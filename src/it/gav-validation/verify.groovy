@@ -17,22 +17,19 @@
  * under the License.
  */
 
-import java.io.*;
-import java.util.*;
-
 String[] paths =
-{
+[
     "org/apache/maven/its/install/gv",
-};
+];
 
 for ( String path : paths )
 {
-    File file = new File( localRepositoryPath, path );
-    System.out.println( "Checking for absence of " + file );
-    if ( file.exists() )
-    {
-        throw new FileNotFoundException( "Existing: " + file.getAbsolutePath() );
-    }
+    assert !new File( localRepositoryPath, path ).exists();
 }
+
+File buildLog = new File( basedir, 'build.log' )
+assert buildLog.exists()
+assert buildLog.text.contains( "The artifact information is incomplete" )
+assert buildLog.text.contains( "The artifact information is not valid" )
 
 return true;
