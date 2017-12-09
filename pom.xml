@@ -43,15 +43,19 @@
   </prerequisites>
 
   <scm>
-    <connection>scm:svn:http://svn.apache.org/repos/asf/maven/plugins/trunk/maven-install-plugin/</connection>
-    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/maven/plugins/trunk/maven-install-plugin/
-    </developerConnection>
-    <url>http://svn.apache.org/viewvc/maven/plugins/trunk/maven-install-plugin/</url>
+    <connection>scm:git:https://gitbox.apache.org/repos/asf/maven-install-plugin.git</connection>
+    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/maven-install-plugin.git</developerConnection>
+    <url>https://github.com/apache/maven-install-plugin/tree/${project.scm.tag}</url>
+    <tag>HEAD</tag>
   </scm>
   <issueManagement>
     <system>jira</system>
     <url>https://issues.apache.org/jira/browse/MINSTALL</url>
   </issueManagement>
+  <ciManagement>
+    <system>Jenkins</system>
+    <url>https://builds.apache.org/job/maven-box/job/maven-install-plugin/</url>
+  </ciManagement>
   <distributionManagement>
     <site>
       <id>apache.website</id>
