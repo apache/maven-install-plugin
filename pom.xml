@@ -85,12 +85,6 @@
       <artifactId>maven-artifact-transfer</artifactId>
       <version>0.9.1</version>
     </dependency>
-    <!-- Upgrade of transitive dependency. -->
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.5</version>
-    </dependency>
 
     <!-- dependencies to annotations -->
     <dependency>
@@ -135,22 +129,6 @@
       <version>1.7.5</version>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>commons-codec</groupId>
-      <artifactId>commons-codec</artifactId>
-      <version>1.6</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.shared</groupId>
-      <artifactId>maven-shared-utils</artifactId>
-      <version>3.2.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.codehaus.plexus</groupId>
-      <artifactId>plexus-utils</artifactId>
-      <version>3.1.0</version>
-    </dependency>
   </dependencies>
 
   <contributors>
@@ -188,6 +166,10 @@
                   <goal>clean</goal>
                   <goal>install</goal>
                 </goals>
+                <properties>
+                  <!-- e.g. ensure that Java7 picks up TLSv1.2 when connecting with Central -->
+                  <https.protocols>${https.protocols}</https.protocols>
+                </properties>
               </configuration>
             </plugin>
           </plugins>
