@@ -24,9 +24,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>maven-plugins</artifactId>
     <groupId>org.apache.maven.plugins</groupId>
-    <version>31</version>
+    <artifactId>maven-plugins</artifactId>
+    <version>32</version>
     <relativePath>../../pom/maven/maven-plugins/pom.xml</relativePath>
   </parent>
 
@@ -64,7 +64,6 @@
   </distributionManagement>
 
   <properties>
-    <surefire.version>2.21.0</surefire.version>
     <mavenVersion>3.0</mavenVersion>
   </properties>
 
