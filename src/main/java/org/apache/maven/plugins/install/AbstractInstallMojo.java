@@ -28,7 +28,7 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.project.artifact.ProjectArtifactMetadata;
-import org.apache.maven.shared.repository.RepositoryManager;
+import org.apache.maven.shared.transfer.repository.RepositoryManager;
 
 /**
  * Common fields for installation mojos.
@@ -42,14 +42,6 @@ public abstract class AbstractInstallMojo
 
     @Component
     protected RepositoryManager repositoryManager;
-
-    /**
-     * Flag whether to create checksums (MD5, SHA-1) or not.
-     *
-     * @since 2.2
-     */
-    @Parameter( property = "createChecksum", defaultValue = "false" )
-    protected boolean createChecksum;
 
     /**
      * Whether to update the metadata to make the artifact a release version.

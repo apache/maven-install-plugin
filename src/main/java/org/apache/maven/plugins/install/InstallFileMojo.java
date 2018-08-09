@@ -53,8 +53,8 @@ import org.apache.maven.project.ProjectBuilder;
 import org.apache.maven.project.ProjectBuildingException;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.project.artifact.ProjectArtifactMetadata;
-import org.apache.maven.shared.project.install.ProjectInstaller;
-import org.apache.maven.shared.project.install.ProjectInstallerRequest;
+import org.apache.maven.shared.transfer.project.install.ProjectInstaller;
+import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
 import org.apache.maven.shared.utils.Os;
 import org.apache.maven.shared.utils.ReaderFactory;
 import org.apache.maven.shared.utils.WriterFactory;
@@ -296,7 +296,7 @@ public class InstallFileMojo
         {
             // CHECKSTYLE_OFF: LineLength
             ProjectInstallerRequest projectInstallerRequest =
-                new ProjectInstallerRequest().setProject( project ).setCreateChecksum( createChecksum ).setUpdateReleaseInfo( updateReleaseInfo );
+                new ProjectInstallerRequest().setProject( project );
             // CHECKSTYLE_ON: LineLength
 
             installer.install( buildingRequest, projectInstallerRequest );

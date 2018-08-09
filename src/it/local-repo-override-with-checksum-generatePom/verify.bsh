@@ -19,24 +19,23 @@
 
 import java.io.*;
 import java.util.*;
+import java.lang.*;
 
 import org.apache.maven.plugins.install.Utils;
 
 String[] paths =
 {
     "gid/test/0.1/test-0.1.jar",
+    "gid/test/0.1/test-0.1.pom",
+};
+
+String[] pathsWhichShouldNotExist =
+{
     "gid/test/0.1/test-0.1.jar.md5",
     "gid/test/0.1/test-0.1.jar.sha1",
-    "gid/test/0.1/test-0.1.pom",
     "gid/test/0.1/test-0.1.pom.md5",
     "gid/test/0.1/test-0.1.pom.sha1",
 };
-
-Set cksumToCheckPaths = new HashSet( Arrays.asList( new String[]
-{
-    "gid/test/0.1/test-0.1.pom",
-    "gid/test/0.1/test-0.1.jar"
-} ) );
 
 for ( String path : paths )
 {
@@ -46,10 +45,15 @@ for ( String path : paths )
     {
         throw new FileNotFoundException( "Existing: " + file.getAbsolutePath() );
     }
-    if ( cksumToCheckPaths.contains( path ) )
-    {    
-        System.out.println( "Verifying " + file );
-        Utils.verifyChecksum( file );
+}
+
+for ( String path : pathsWhichShouldNotExist )
+{
+    File file = new File( new File( basedir, "target/local-repo" ), path );
+    System.out.println( "Checking for non existence of " + file );
+    if ( file.isFile() )
+    {
+        throw new IOException( "Existing: " + file.getAbsolutePath() );
     }
 }
 

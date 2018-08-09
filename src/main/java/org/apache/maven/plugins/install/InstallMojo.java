@@ -33,10 +33,10 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.artifact.install.ArtifactInstallerException;
-import org.apache.maven.shared.project.NoFileAssignedException;
-import org.apache.maven.shared.project.install.ProjectInstaller;
-import org.apache.maven.shared.project.install.ProjectInstallerRequest;
+import org.apache.maven.shared.transfer.artifact.install.ArtifactInstallerException;
+import org.apache.maven.shared.transfer.project.NoFileAssignedException;
+import org.apache.maven.shared.transfer.project.install.ProjectInstaller;
+import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
 
 /**
  * Installs the project's main artifact, and any other artifacts attached by other plugins in the lifecycle, to the
@@ -101,7 +101,7 @@ public class InstallMojo
         {
             // CHECKSTYLE_OFF: LineLength
             ProjectInstallerRequest projectInstallerRequest =
-                new ProjectInstallerRequest().setProject( project ).setCreateChecksum( createChecksum ).setUpdateReleaseInfo( updateReleaseInfo );
+                new ProjectInstallerRequest().setProject( project );
             // CHECKSTYLE_ON: LineLength
 
             if ( !installAtEnd )

@@ -19,6 +19,7 @@
 
 import java.io.*;
 import java.util.*;
+import java.lang.*;
 
 import org.apache.maven.plugins.install.Utils;
 
@@ -26,26 +27,22 @@ String[] paths =
 {
     "org/apache/maven/its/install/jsj/test/maven-metadata-local.xml",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1.jar",
+    "org/apache/maven/its/install/jsj/test/0.1/test-0.1.pom",
+    "org/apache/maven/its/install/jsj/test/0.1/test-0.1-sources.jar",
+    "org/apache/maven/its/install/jsj/test/0.1/test-0.1-javadoc.jar",
+};
+
+String[] pathsWhichShouldNotExist =
+{
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1.jar.md5",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1.jar.sha1",
-    "org/apache/maven/its/install/jsj/test/0.1/test-0.1.pom",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1.pom.md5",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1.pom.sha1",
-    "org/apache/maven/its/install/jsj/test/0.1/test-0.1-sources.jar",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1-sources.jar.md5",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1-sources.jar.sha1",
-    "org/apache/maven/its/install/jsj/test/0.1/test-0.1-javadoc.jar",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1-javadoc.jar.md5",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1-javadoc.jar.sha1",
 };
-
-Set cksumToCheckPaths = new HashSet( Arrays.asList( new String[]
-{
-    "org/apache/maven/its/install/jsj/test/0.1/test-0.1.jar",
-    "org/apache/maven/its/install/jsj/test/0.1/test-0.1.pom",
-    "org/apache/maven/its/install/jsj/test/0.1/test-0.1-sources.jar",
-    "org/apache/maven/its/install/jsj/test/0.1/test-0.1-javadoc.jar"
-} ) );
 
 for ( String path : paths )
 {
@@ -55,10 +52,15 @@ for ( String path : paths )
     {
         throw new FileNotFoundException( "Missing: " + file.getAbsolutePath() );
     }
-    if ( cksumToCheckPaths.contains( path ) )
-    {    
-        System.out.println( "Verifying " + file );
-        Utils.verifyChecksum( file );
+}
+
+for ( String path : pathsWhichShouldNotExist )
+{
+    File file = new File( localRepositoryPath, path );
+    System.out.println( "Checking for non existence of " + file );
+    if ( file.isFile() )
+    {
+        throw new IOException( "Missing: " + file.getAbsolutePath() );
     }
 }
 

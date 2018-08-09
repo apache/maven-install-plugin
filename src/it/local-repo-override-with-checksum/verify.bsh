@@ -19,33 +19,38 @@
 
 import java.io.*;
 import java.util.*;
+import java.lang.*;
 
 import org.apache.maven.plugins.install.Utils;
 
 String[] paths =
 {
     "gid/test/0.1/test-0.1.jar",
+};
+
+String[] pathsWhichAreNotAllowedToBeThere =
+{
     "gid/test/0.1/test-0.1.jar.md5",
     "gid/test/0.1/test-0.1.jar.sha1",
 };
 
-Set cksumToCheckPaths = new HashSet( Arrays.asList( new String[]
+for ( String path : pathsWhichAreNotAllowedToBeThere )
 {
-    "gid/test/0.1/test-0.1.jar"
-} ) );
+    File file = new File( new File( basedir, "target/local-repo" ), path );
+    System.out.println( "Checking for existence of " + file );
+    if ( file.isFile() )
+    {
+        throw new IOException( "Existing file which should not be there: " + file.getAbsolutePath() );
+    }
+}
 
 for ( String path : paths )
 {
     File file = new File( new File( basedir, "target/local-repo" ), path );
-    System.out.println( "Checking for existence of " + file );
+    System.out.println( "Checking for non existence of " + file );
     if ( !file.isFile() )
     {
         throw new FileNotFoundException( "Existing: " + file.getAbsolutePath() );
-    }
-    if ( cksumToCheckPaths.contains( path ) )
-    {    
-        System.out.println( "Verifying " + file );
-        Utils.verifyChecksum( file );
     }
 }
 
