@@ -65,6 +65,7 @@
 
   <properties>
     <mavenVersion>3.0</mavenVersion>
+    <javaVersion>7</javaVersion>
   </properties>
 
   <dependencies>
