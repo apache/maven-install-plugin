@@ -50,6 +50,7 @@ public abstract class AbstractInstallMojo
      * Gets the path of the specified artifact within the local repository. Note that the returned path need not exist
      * (yet).
      *
+     * @param buildingRequest {@link ProjectBuildingRequest}.
      * @param artifact The artifact whose local repo path should be determined, must not be <code>null</code>.
      * @return The absolute path to the artifact when installed, never <code>null</code>.
      */
@@ -63,6 +64,7 @@ public abstract class AbstractInstallMojo
      * Gets the path of the specified artifact metadata within the local repository. Note that the returned path need
      * not exist (yet).
      *
+     * @param buildingRequest {@link ProjectBuildingRequest}.
      * @param metadata The artifact metadata whose local repo path should be determined, must not be <code>null</code>.
      * @return The absolute path to the artifact metadata when installed, never <code>null</code>.
      */
