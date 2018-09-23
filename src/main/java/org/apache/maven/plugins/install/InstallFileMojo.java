@@ -66,7 +66,6 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
  * Installs a file in the local repository.
  * 
  * @author <a href="mailto:brett@apache.org">Brett Porter</a>
- * @version $Id$
  */
 @Mojo( name = "install-file", requiresProject = false, aggregator = true, threadSafe = true )
 public class InstallFileMojo

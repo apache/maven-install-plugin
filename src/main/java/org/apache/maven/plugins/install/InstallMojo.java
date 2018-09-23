@@ -43,7 +43,6 @@ import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
  * local repository.
  * 
  * @author <a href="mailto:evenisse@apache.org">Emmanuel Venisse</a>
- * @version $Id$
  */
 @Mojo( name = "install", defaultPhase = LifecyclePhase.INSTALL, threadSafe = true )
 public class InstallMojo

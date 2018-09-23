@@ -34,7 +34,6 @@ import org.apache.maven.shared.transfer.repository.RepositoryManager;
  * Common fields for installation mojos.
  *
  * @author <a href="mailto:brett@apache.org">Brett Porter</a>
- * @version $Id$
  */
 public abstract class AbstractInstallMojo
     extends AbstractMojo
