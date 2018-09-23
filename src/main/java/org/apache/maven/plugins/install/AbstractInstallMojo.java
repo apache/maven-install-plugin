@@ -43,12 +43,6 @@ public abstract class AbstractInstallMojo
     @Component
     protected RepositoryManager repositoryManager;
 
-    /**
-     * Whether to update the metadata to make the artifact a release version.
-     */
-    @Parameter( property = "updateReleaseInfo", defaultValue = "false" )
-    protected boolean updateReleaseInfo;
-
     @Parameter( defaultValue = "${session}", required = true, readonly = true )
     protected MavenSession session;
 
