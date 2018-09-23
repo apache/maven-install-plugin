@@ -55,6 +55,12 @@ ${project.name}
 
   []
 
+* Important Note for Version 3.0.0+
+
+  The {{{./install-mojo.html}install:install}} goal does not support creating checksums anymore
+  via <<<-DcreateChecksum=true>>> cause this option has been removed. Details can be found
+  in {{{https://issues.apache.org/jira/browse/MINSTALL-143}MINSTALL-143}}.
+  
 * Usage
 
   General instructions on how to use the Install Plugin can be found on the {{{./usage.html}usage page}}. Some more
