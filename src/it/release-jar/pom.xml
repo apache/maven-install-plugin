@@ -47,9 +47,6 @@ under the License.
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-install-plugin</artifactId>
         <version>@project.version@</version>
-        <configuration>
-          <updateReleaseInfo>true</updateReleaseInfo>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

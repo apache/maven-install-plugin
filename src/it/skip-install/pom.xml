@@ -48,7 +48,6 @@ under the License.
         <artifactId>maven-install-plugin</artifactId>
         <version>@project.version@</version>
         <configuration>
-          <updateReleaseInfo>true</updateReleaseInfo>
           <skip>true</skip>
         </configuration>
       </plugin>
