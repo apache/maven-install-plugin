@@ -53,7 +53,7 @@ public class InstallMojo
      * When building with multiple threads, reaching the last project doesn't have to mean that all projects are ready
      * to be installed
      */
-    private static final AtomicInteger READYPROJECTSCOUTNER = new AtomicInteger();
+    private static final AtomicInteger READYPROJECTSCOUNTER = new AtomicInteger();
 
     private static final List<ProjectInstallerRequest> INSTALLREQUESTS =
         Collections.synchronizedList( new ArrayList<ProjectInstallerRequest>() );
@@ -114,7 +114,7 @@ public class InstallMojo
             }
         }
 
-        boolean projectsReady = READYPROJECTSCOUTNER.incrementAndGet() == reactorProjects.size();
+        boolean projectsReady = READYPROJECTSCOUNTER.incrementAndGet() == reactorProjects.size();
         if ( projectsReady )
         {
             synchronized ( INSTALLREQUESTS )
