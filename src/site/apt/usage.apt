@@ -31,8 +31,8 @@ Usage
 
   Apache Maven has a two level strategy to resolve and distribute files, which we call artifacts.
   The first level is called the <<<local repository>>>, which is the artifact cache on your system, by default located at <<<$\{user.home\}/.m2/repository>>>.
-  When executing Maven, it'll first look in this local cache for artifacts. If the artifact cannot be found here, Maven will access the remote repositories to find the artifact.
-  Once found it will be stored into the local repository, so it's be available for current and future usage.
+  When executing Maven, it first looks in this local cache for artifacts. If the artifact cannot be found here, Maven will access the remote repositories to find the artifact.
+  Once found it will be stored into the local repository, so it's available for current and future usage.
   
   With the <<<maven-install-plugin>>> you can put your artifacts in the local repository. To upload artifacts to a remote repository, you need to use the
   {{{http://maven.apache.org/plugins/maven-deploy-plugin/}maven-deploy-plugin}}.
