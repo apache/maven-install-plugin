@@ -234,7 +234,7 @@ public class InstallFileMojoTest
         assertEquals( 4, FileUtils.getFiles( new File( LOCAL_REPO ), null, null ).size() );
     }
 
-    public void testInstallFileWithChecksum()
+    public void testInstallFile()
         throws Exception
     {
         File testPom =

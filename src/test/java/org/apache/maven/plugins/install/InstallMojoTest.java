@@ -58,14 +58,7 @@ public class InstallMojoTest
     {
         super.setUp();
 
-        System.out.println( ">>>Cleaning local repo " + getBasedir() + "/" + LOCAL_REPO + "..." );
-
         FileUtils.deleteDirectory( new File( getBasedir() + "/" + LOCAL_REPO ) );
-        
-//        LegacySupport legacySupport = lookup( LegacySupport.class );
-//        RepositorySystemSession repositorySession = new DefaultRepositorySystemSession();
-//        MavenExecutionRequest executionRequest = new DefaultMavenExecutionRequest();
-//        legacySupport.setSession( new MavenSession( getContainer(), repositorySession, executionRequest, null ) );
     }
 
     public void testInstallTestEnvironment()
@@ -250,7 +243,7 @@ public class InstallMojoTest
         assertEquals( 4, FileUtils.getFiles( new File( LOCAL_REPO ), null, null ).size() );
     }
 
-    public void testBasicInstallAndCreateChecksumIsTrue()
+    public void testBasicInstallAndCreate()
         throws Exception
     {
         File testPom = new File( getBasedir(), "target/test-classes/unit/basic-install-checksum/plugin-config.xml" );
@@ -269,10 +262,6 @@ public class InstallMojoTest
         setVariableValueToObject( mojo, "session", mavenSession );
 
         artifact = (InstallArtifactStub) project.getArtifact();
-
-//        boolean createChecksum = (Boolean) getVariableValueFromObject( mojo, "createChecksum" );
-//
-//        assertTrue( createChecksum );
 
         artifact.setFile( file );
 
@@ -302,31 +291,11 @@ public class InstallMojoTest
         String localPath = getBasedir() + "/" + LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/" +
                         artifact.getVersion() + "/" + artifact.getArtifactId() + "-" + artifact.getVersion();
         
-        //get the actual checksum of the pom
-//        Map<String, Object> csums = ChecksumUtils.calc( pom, Utils.CHECKSUM_ALGORITHMS );
-//        for (Map.Entry<String, Object> csum : csums.entrySet()) {
-//            Object actualPomSum = csum.getValue();
-//            File pomSum = new File( localPath + ".pom." + csum.getKey().toLowerCase().replace( "-", "" ) );
-//            assertTrue( pomSum.exists() );
-//            String generatedPomSum = FileUtils.fileRead( pomSum, "UTF-8" );
-//            assertEquals( actualPomSum, generatedPomSum );
-//        }
-
-        //get the actual checksum of the artifact
-//        csums = ChecksumUtils.calc( file, Utils.CHECKSUM_ALGORITHMS );
-//        for (Map.Entry<String, Object> csum : csums.entrySet()) {
-//            Object actualSum = csum.getValue();
-//            File sum = new File( localPath + "." + packaging + "." + csum.getKey().toLowerCase().replace( "-", "" ) );
-//            assertTrue( sum.exists() );
-//            String generatedSum = FileUtils.fileRead( sum, "UTF-8" );
-//            assertEquals( actualSum, generatedSum );
-//        }
 
         File installedArtifact = new File( localPath + "." + packaging );
 
         assertTrue( installedArtifact.exists() );
         
-//        assertEquals( 9, FileUtils.getFiles( new File( LOCAL_REPO ), null, null ).size() );
         assertEquals( 5, FileUtils.getFiles( new File( LOCAL_REPO ), null, null ).size() );
     }
 
