@@ -21,7 +21,6 @@ package org.apache.maven.plugins.install;
 
 import java.io.File;
 import java.io.Reader;
-import java.util.Map;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
@@ -32,9 +31,7 @@ import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.shared.utils.ReaderFactory;
 import org.apache.maven.shared.utils.io.FileUtils;
-import org.apache.maven.shared.utils.io.IOUtil;
 import org.sonatype.aether.impl.internal.EnhancedLocalRepositoryManager;
-import org.sonatype.aether.util.ChecksumUtils;
 import org.sonatype.aether.util.DefaultRepositorySystemSession;
 
 import static org.mockito.Mockito.mock;
@@ -66,11 +63,6 @@ public class InstallFileMojoTest
         super.setUp();
 
         FileUtils.deleteDirectory( new File( getBasedir() + "/" + LOCAL_REPO ) );
-        
-//        LegacySupport legacySupport = lookup( LegacySupport.class );
-//        RepositorySystemSession repositorySession = new DefaultRepositorySystemSession();
-//        MavenExecutionRequest executionRequest = new DefaultMavenExecutionRequest();
-//        legacySupport.setSession( new MavenSession( getContainer(), repositorySession, executionRequest, null ) );
     }
 
     public void testInstallFileTestEnvironment()
@@ -166,28 +158,17 @@ public class InstallFileMojoTest
         File installedPom = new File( getBasedir(), LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" +
             artifactId + "-" + version + "." + "pom" );
 
-        Model model;
+        try ( Reader reader = ReaderFactory.newXmlReader( installedPom ) ) {
+            Model model = new MavenXpp3Reader().read( reader );
 
-        Reader reader = null;
-        try
-        {
-            reader = ReaderFactory.newXmlReader( installedPom );
-            model = new MavenXpp3Reader().read( reader );
-            reader.close();
-            reader = null;
+            assertEquals( "4.0.0", model.getModelVersion() );
+    
+            assertEquals( (String) getVariableValueFromObject( mojo, "groupId" ), model.getGroupId() );
+    
+            assertEquals( artifactId, model.getArtifactId() );
+    
+            assertEquals( version, model.getVersion() );
         }
-        finally
-        {
-            IOUtil.close( reader );
-        }
-
-        assertEquals( "4.0.0", model.getModelVersion() );
-
-        assertEquals( (String) getVariableValueFromObject( mojo, "groupId" ), model.getGroupId() );
-
-        assertEquals( artifactId, model.getArtifactId() );
-
-        assertEquals( version, model.getVersion() );
 
         assertEquals( 5, FileUtils.getFiles( new File( LOCAL_REPO ), null, null ).size() );
     }
@@ -267,10 +248,6 @@ public class InstallFileMojoTest
 
         assignValuesForParameter( mojo );
 
-//        boolean createChecksum = (Boolean) getVariableValueFromObject( mojo, "createChecksum" );
-//
-//        assertTrue( createChecksum );
-
         mojo.execute();
 
         String localPath = getBasedir() + "/" + LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" +
@@ -278,19 +255,8 @@ public class InstallFileMojoTest
         
         File installedArtifact = new File( localPath + "." + "jar" );
         
-        //get the actual checksum of the artifact
-//        Map<String, Object> csums = ChecksumUtils.calc( file, Utils.CHECKSUM_ALGORITHMS );
-//        for (Map.Entry<String, Object> csum : csums.entrySet()) {
-//            Object actualSum = csum.getValue();
-//            File sum = new File( localPath + ".jar." + csum.getKey().toLowerCase().replace( "-", "" ) );
-//            assertTrue( sum.exists() );
-//            String generatedSum = FileUtils.fileRead( sum, "UTF-8" );
-//            assertEquals( actualSum, generatedSum );
-//        }
-
         assertTrue( installedArtifact.exists() );
         
-//        assertEquals( 9, FileUtils.getFiles( new File( LOCAL_REPO ), null, null ).size() );
         assertEquals( 5, FileUtils.getFiles( new File( LOCAL_REPO ), null, null ).size() );
     }
 
