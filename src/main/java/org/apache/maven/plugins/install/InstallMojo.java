@@ -77,7 +77,7 @@ public class InstallMojo
     private boolean installAtEnd;
 
     /**
-     * Set this to <code>true</code> to bypass artifact installation. Use this for artifacts that does not need to be
+     * Set this to <code>true</code> to bypass artifact installation. Use this for artifacts that do not need to be
      * installed in the local repository.
      * 
      * @since 2.4
