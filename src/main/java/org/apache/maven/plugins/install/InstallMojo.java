@@ -67,8 +67,17 @@ public class InstallMojo
     private List<MavenProject> reactorProjects;
 
     /**
-     * Whether every project should be installed during its own install-phase or at the end of the multimodule build. If
-     * set to {@code true} and the build fails, none of the reactor projects is installed.
+     * Whether every project should be installed during its own install-phase or at the end of the
+     * multi-module build. If set to {@code true} and the build fails, none of the reactor projects
+     * is installed.
+     *
+     * In order for this flag to work properly, all modules of the multi-module must set this
+     * property to the same value and all modules must have the same value for the skip property.
+     * If this property or the skip property are inconsistently set in different projects, any
+     * project with this property set to true will not be installed either immediately nor at the
+     * end of the build.  See details in
+     * <a href="https://issues.apache.org/jira/browse/MINSTALL-115">MINSTALL-115</a>
+     *
      * <strong>(experimental)</strong>
      * 
      * @since 2.5
