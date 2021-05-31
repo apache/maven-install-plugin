@@ -34,5 +34,22 @@ under the License.
        </p>
      </answer>
    </faq>
+   <faq id="question">
+     <question>Why isn't <i>installAtEnd</i> property working?</question>
+     <answer>
+       <p>
+       The <i>installAtEnd</i> property must be set consistently in all modules and the <i>skip</i>
+       property must be set consistently in all modules.  If either property is not consistent, any
+       module with <i>installAtEnd</i> set to true will not be installed.
+       </p>
+       <p>
+       An alternative to using <i>installAtEnd</i> is to have the build script invoke Maven twice:
+<pre>
+ mvn verify
+ mvn install:install
+</pre>
+       </p>
+     </answer>
+   </faq>
  </part>
 </faqs>
