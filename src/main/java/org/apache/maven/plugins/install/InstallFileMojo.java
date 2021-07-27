@@ -185,7 +185,7 @@ public class InstallFileMojo
 
         if ( !file.exists() )
         {
-            String message = "The specified file '" + file.getPath() + "' not exists";
+            String message = "The specified file '" + file.getPath() + "' does not exist";
             getLog().error( message );
             throw new MojoFailureException( message );
         }
