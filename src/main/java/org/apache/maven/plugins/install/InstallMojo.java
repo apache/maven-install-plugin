@@ -20,11 +20,8 @@ package org.apache.maven.plugins.install;
  */
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -50,9 +47,7 @@ import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
 public class InstallMojo
     extends AbstractInstallMojo
 {
-    private static final String INSTALL_REQUESTS_KEY = InstallMojo.class.getName() + ".installRequests";
-
-    private static final MavenProject SENTINEL = new MavenProject();
+    private static final String INSTALL_PROCESSED_MARKER = InstallMojo.class.getName() + ".processed";
 
     @Parameter( defaultValue = "${project}", readonly = true, required = true )
     private MavenProject project;
@@ -93,17 +88,10 @@ public class InstallMojo
     {
 
         final String projectKey = project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion();
-        final ConcurrentMap<String, Object> pluginContext =
-                (ConcurrentMap<String, Object>) session.getPluginContext( pluginDescriptor, reactorProjects.get( 0 ) );
-        final Map<String, MavenProject> installRequests = (Map<String, MavenProject>) pluginContext.computeIfAbsent(
-                INSTALL_REQUESTS_KEY,
-                k -> Collections.synchronizedMap( new LinkedHashMap<String, MavenProject>() )
-        );
-
         boolean addedInstallRequest = false;
         if ( skip )
         {
-            installRequests.put( projectKey, SENTINEL );
+            getPluginContext().put( INSTALL_PROCESSED_MARKER, Boolean.FALSE );
             getLog().info( "Skipping artifact installation" );
         }
         else
@@ -114,22 +102,24 @@ public class InstallMojo
             }
             else
             {
-                installRequests.put( projectKey, project );
+                getPluginContext().put( INSTALL_PROCESSED_MARKER, Boolean.TRUE );
                 addedInstallRequest = true;
             }
         }
 
-        if ( installRequests.size() == reactorProjects.size() )
+        if ( allProjectsMarked() )
         {
-            for ( Map.Entry<String, MavenProject> projectEntry : installRequests.entrySet() )
+            for ( MavenProject reactorProject : reactorProjects )
             {
-                if ( projectEntry.getValue() == SENTINEL )
+                Map<String, Object> pluginContext = session.getPluginContext( pluginDescriptor, reactorProject );
+                Boolean install = (Boolean) pluginContext.get( INSTALL_PROCESSED_MARKER );
+                if ( !install )
                 {
                     getLog().info( "Project " + projectKey + " skipped install" );
                 }
                 else
                 {
-                    installProject( projectEntry.getValue() );
+                    installProject( reactorProject );
                 }
             }
         }
@@ -137,6 +127,19 @@ public class InstallMojo
         {
             getLog().info( "Installing " + projectKey + " at end" );
         }
+    }
+
+    private boolean allProjectsMarked()
+    {
+        for ( MavenProject reactorProject : reactorProjects )
+        {
+            Map<String, Object> pluginContext = session.getPluginContext( pluginDescriptor, reactorProject );
+            if ( !pluginContext.containsKey( INSTALL_PROCESSED_MARKER ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void installProject( MavenProject pir )
