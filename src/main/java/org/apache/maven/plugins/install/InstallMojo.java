@@ -20,19 +20,21 @@ package org.apache.maven.plugins.install;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.shared.transfer.artifact.install.ArtifactInstallerException;
 import org.apache.maven.shared.transfer.project.NoFileAssignedException;
 import org.apache.maven.shared.transfer.project.install.ProjectInstaller;
@@ -48,23 +50,21 @@ import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
 public class InstallMojo
     extends AbstractInstallMojo
 {
+    private static final String INSTALL_REQUESTS_KEY = InstallMojo.class.getName() + ".installRequests";
 
-    /**
-     * When building with multiple threads, reaching the last project doesn't have to mean that all projects are ready
-     * to be installed
-     */
-    private static final AtomicInteger READYPROJECTSCOUNTER = new AtomicInteger();
+    private static final MavenProject SENTINEL = new MavenProject();
 
-    private static final List<ProjectInstallerRequest> INSTALLREQUESTS =
-        Collections.synchronizedList( new ArrayList<ProjectInstallerRequest>() );
-
-    /**
-     */
     @Parameter( defaultValue = "${project}", readonly = true, required = true )
     private MavenProject project;
 
     @Parameter( defaultValue = "${reactorProjects}", required = true, readonly = true )
     private List<MavenProject> reactorProjects;
+
+    @Parameter( defaultValue = "${session}", required = true, readonly = true )
+    private MavenSession session;
+
+    @Parameter( defaultValue = "${plugin}", required = true, readonly = true )
+    private PluginDescriptor pluginDescriptor;
 
     /**
      * Whether every project should be installed during its own install-phase or at the end of the multimodule build. If
@@ -91,53 +91,60 @@ public class InstallMojo
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
+
+        final String projectKey = project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion();
+        final ConcurrentMap<String, Object> pluginContext =
+                (ConcurrentMap<String, Object>) session.getPluginContext( pluginDescriptor, reactorProjects.get( 0 ) );
+        final Map<String, MavenProject> installRequests = (Map<String, MavenProject>) pluginContext.computeIfAbsent(
+                INSTALL_REQUESTS_KEY,
+                k -> Collections.synchronizedMap( new LinkedHashMap<String, MavenProject>() )
+        );
+
         boolean addedInstallRequest = false;
         if ( skip )
         {
+            installRequests.put( projectKey, SENTINEL );
             getLog().info( "Skipping artifact installation" );
         }
         else
         {
-            // CHECKSTYLE_OFF: LineLength
-            ProjectInstallerRequest projectInstallerRequest =
-                new ProjectInstallerRequest().setProject( project );
-            // CHECKSTYLE_ON: LineLength
-
             if ( !installAtEnd )
             {
-                installProject( session.getProjectBuildingRequest(), projectInstallerRequest );
+                installProject( project );
             }
             else
             {
-                INSTALLREQUESTS.add( projectInstallerRequest );
+                installRequests.put( projectKey, project );
                 addedInstallRequest = true;
             }
         }
 
-        boolean projectsReady = READYPROJECTSCOUNTER.incrementAndGet() == reactorProjects.size();
-        if ( projectsReady )
+        if ( installRequests.size() == reactorProjects.size() )
         {
-            synchronized ( INSTALLREQUESTS )
+            for ( Map.Entry<String, MavenProject> projectEntry : installRequests.entrySet() )
             {
-                while ( !INSTALLREQUESTS.isEmpty() )
+                if ( projectEntry.getValue() == SENTINEL )
                 {
-                    installProject( session.getProjectBuildingRequest(), INSTALLREQUESTS.remove( 0 ) );
+                    getLog().info( "Project " + projectKey + " skipped install" );
+                }
+                else
+                {
+                    installProject( projectEntry.getValue() );
                 }
             }
         }
         else if ( addedInstallRequest )
         {
-            getLog().info( "Installing " + project.getGroupId() + ":" + project.getArtifactId() + ":"
-                + project.getVersion() + " at end" );
+            getLog().info( "Installing " + projectKey + " at end" );
         }
     }
 
-    private void installProject( ProjectBuildingRequest pbr, ProjectInstallerRequest pir )
+    private void installProject( MavenProject pir )
         throws MojoFailureException, MojoExecutionException
     {
         try
         {
-            installer.install( session.getProjectBuildingRequest(), pir );
+            installer.install( session.getProjectBuildingRequest(), new ProjectInstallerRequest().setProject( pir ) );
         }
         catch ( IOException e )
         {
