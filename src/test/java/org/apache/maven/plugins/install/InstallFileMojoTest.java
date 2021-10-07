@@ -218,8 +218,6 @@ public class InstallFileMojoTest
 
         assertNotNull( mojo );
 
-        setVariableValueToObject( mojo, "pluginContext", new ConcurrentHashMap<>() );
-
         setVariableValueToObject( mojo, "session", createMavenSession() );
 
         assignValuesForParameter( mojo );
@@ -247,8 +245,6 @@ public class InstallFileMojoTest
         InstallFileMojo mojo = (InstallFileMojo) lookupMojo( "install-file", testPom );
 
         assertNotNull( mojo );
-
-        setVariableValueToObject( mojo, "pluginContext", new ConcurrentHashMap<>() );
 
         setVariableValueToObject( mojo, "session", createMavenSession() );
 
