@@ -65,6 +65,7 @@
   <properties>
     <mavenVersion>3.2.5</mavenVersion>
     <slf4jVersion>1.7.32</slf4jVersion>
+    <aetherVersion>1.1.0</aetherVersion>
     <javaVersion>8</javaVersion>
     <project.build.outputTimestamp>2020-04-07T21:04:00Z</project.build.outputTimestamp>
   </properties>
@@ -142,19 +143,19 @@
     <dependency>
       <groupId>org.eclipse.aether</groupId>
       <artifactId>aether-api</artifactId>
-      <version>1.1.0</version>
+      <version>${aetherVersion}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.aether</groupId>
       <artifactId>aether-util</artifactId>
-      <version>1.1.0</version>
+      <version>${aetherVersion}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.aether</groupId>
       <artifactId>aether-impl</artifactId>
-      <version>1.1.0</version>
+      <version>${aetherVersion}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
