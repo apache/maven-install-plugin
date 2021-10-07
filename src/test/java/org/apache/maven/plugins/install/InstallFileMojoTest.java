@@ -21,18 +21,20 @@ package org.apache.maven.plugins.install;
 
 import java.io.File;
 import java.io.Reader;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
-import org.apache.maven.plugins.install.InstallFileMojo;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.shared.utils.ReaderFactory;
 import org.apache.maven.shared.utils.io.FileUtils;
-import org.sonatype.aether.impl.internal.EnhancedLocalRepositoryManager;
-import org.sonatype.aether.util.DefaultRepositorySystemSession;
+import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
+import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -215,7 +217,9 @@ public class InstallFileMojoTest
         InstallFileMojo mojo = (InstallFileMojo) lookupMojo( "install-file", testPom );
 
         assertNotNull( mojo );
-        
+
+        setVariableValueToObject( mojo, "pluginContext", new ConcurrentHashMap<>() );
+
         setVariableValueToObject( mojo, "session", createMavenSession() );
 
         assignValuesForParameter( mojo );
@@ -243,7 +247,9 @@ public class InstallFileMojoTest
         InstallFileMojo mojo = (InstallFileMojo) lookupMojo( "install-file", testPom );
 
         assertNotNull( mojo );
-        
+
+        setVariableValueToObject( mojo, "pluginContext", new ConcurrentHashMap<>() );
+
         setVariableValueToObject( mojo, "session", createMavenSession() );
 
         assignValuesForParameter( mojo );
@@ -281,11 +287,11 @@ public class InstallFileMojoTest
         return parameter.replace( '.', '/' );
     }
     
-    private MavenSession createMavenSession()
+    private MavenSession createMavenSession() throws NoLocalRepositoryManagerException
     {
         MavenSession session = mock( MavenSession.class );
         DefaultRepositorySystemSession repositorySession  = new DefaultRepositorySystemSession();
-        repositorySession.setLocalRepositoryManager( new EnhancedLocalRepositoryManager( new File( LOCAL_REPO )     ) );
+        repositorySession.setLocalRepositoryManager( new EnhancedLocalRepositoryManagerFactory().newInstance( repositorySession, new LocalRepository( LOCAL_REPO )) );
         ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
         buildingRequest.setRepositorySession( repositorySession );
         when( session.getProjectBuildingRequest() ).thenReturn( buildingRequest );
