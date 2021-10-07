@@ -364,7 +364,8 @@ public class InstallMojoTest
         ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
         buildingRequest.setRepositorySession( repositorySession );
         when( session.getProjectBuildingRequest() ).thenReturn( buildingRequest );
-        when( session.getPluginContext(any(PluginDescriptor.class), any(MavenProject.class))).thenReturn( new ConcurrentHashMap<>() );
+        when( session.getPluginContext(any(PluginDescriptor.class), any(MavenProject.class)))
+            .thenReturn( new ConcurrentHashMap<String, Object>() );
         return session;
     }
     

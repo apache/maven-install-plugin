@@ -66,7 +66,8 @@
     <mavenVersion>3.2.5</mavenVersion>
     <slf4jVersion>1.7.32</slf4jVersion>
     <aetherVersion>1.1.0</aetherVersion>
-    <javaVersion>8</javaVersion>
+    <surefire.version>2.22.2</surefire.version>
+    <javaVersion>7</javaVersion>
     <project.build.outputTimestamp>2020-04-07T21:04:00Z</project.build.outputTimestamp>
   </properties>
 
