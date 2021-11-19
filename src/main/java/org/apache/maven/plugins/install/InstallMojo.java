@@ -86,8 +86,6 @@ public class InstallMojo
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
-
-        final String projectKey = project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion();
         boolean addedInstallRequest = false;
         if ( skip )
         {
@@ -115,7 +113,9 @@ public class InstallMojo
                 Boolean install = (Boolean) pluginContext.get( INSTALL_PROCESSED_MARKER );
                 if ( !install )
                 {
-                    getLog().info( "Project " + projectKey + " skipped install" );
+                    getLog().info(
+                        "Project " + getProjectReferenceId( reactorProject ) + " skipped install"
+                    );
                 }
                 else
                 {
@@ -125,8 +125,13 @@ public class InstallMojo
         }
         else if ( addedInstallRequest )
         {
-            getLog().info( "Installing " + projectKey + " at end" );
+            getLog().info( "Installing " + getProjectReferenceId( project ) + " at end" );
         }
+    }
+
+    private String getProjectReferenceId( MavenProject mavenProject )
+    {
+        return mavenProject.getGroupId() + ":" + mavenProject.getArtifactId() + ":" + mavenProject.getVersion();
     }
 
     private boolean allProjectsMarked()
