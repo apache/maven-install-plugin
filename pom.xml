@@ -84,7 +84,6 @@
       <version>${mavenVersion}</version>
       <scope>provided</scope>
     </dependency>
-
     <!-- This is here to override 3.0 coming with maven-artifact-transfer -->
     <dependency>
       <groupId>org.apache.maven</groupId>
