@@ -282,12 +282,16 @@ public class InstallFileMojoTest
     {
         return parameter.replace( '.', '/' );
     }
-    
+
     private MavenSession createMavenSession() throws NoLocalRepositoryManagerException
     {
         MavenSession session = mock( MavenSession.class );
         DefaultRepositorySystemSession repositorySession  = new DefaultRepositorySystemSession();
-        repositorySession.setLocalRepositoryManager( new EnhancedLocalRepositoryManagerFactory().newInstance( repositorySession, new LocalRepository( LOCAL_REPO )) );
+        repositorySession.setLocalRepositoryManager(
+                new EnhancedLocalRepositoryManagerFactory().newInstance(
+                        repositorySession, new LocalRepository( LOCAL_REPO )
+                )
+        );
         ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
         buildingRequest.setRepositorySession( repositorySession );
         when( session.getProjectBuildingRequest() ).thenReturn( buildingRequest );
