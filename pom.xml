@@ -64,7 +64,7 @@
 
   <properties>
     <mavenVersion>3.2.5</mavenVersion>
-    <slf4jVersion>1.7.32</slf4jVersion>
+    <slf4jVersion>1.7.33</slf4jVersion>
     <aetherVersion>1.1.0</aetherVersion>
     <surefire.version>2.22.2</surefire.version>
     <javaVersion>7</javaVersion>
