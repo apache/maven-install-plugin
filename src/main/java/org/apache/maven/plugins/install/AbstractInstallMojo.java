@@ -21,14 +21,15 @@ package org.apache.maven.plugins.install;
 
 import java.io.File;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugins.annotations.Component;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.project.artifact.ProjectArtifactMetadata;
-import org.apache.maven.shared.transfer.repository.RepositoryManager;
+import org.apache.maven.api.Artifact;
+import org.apache.maven.api.Metadata;
+import org.apache.maven.api.Session;
+import org.apache.maven.api.plugin.annotations.Component;
+import org.apache.maven.api.plugin.annotations.Mojo;
+import org.apache.maven.api.plugin.annotations.Parameter;
+import org.apache.maven.api.services.LocalRepositoryManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Common fields for installation mojos.
@@ -36,41 +37,39 @@ import org.apache.maven.shared.transfer.repository.RepositoryManager;
  * @author <a href="mailto:brett@apache.org">Brett Porter</a>
  */
 public abstract class AbstractInstallMojo
-    extends AbstractMojo
+        implements org.apache.maven.api.plugin.Mojo
 {
 
+    protected Logger logger = LoggerFactory.getLogger( getClass() );
+
     @Component
-    protected RepositoryManager repositoryManager;
+    protected LocalRepositoryManager repositoryManager;
 
     @Parameter( defaultValue = "${session}", required = true, readonly = true )
-    protected MavenSession session;
+    protected Session session;
 
     /**
      * Gets the path of the specified artifact within the local repository. Note that the returned path need not exist
      * (yet).
      *
-     * @param buildingRequest {@link ProjectBuildingRequest}.
      * @param artifact The artifact whose local repo path should be determined, must not be <code>null</code>.
      * @return The absolute path to the artifact when installed, never <code>null</code>.
      */
-    protected File getLocalRepoFile( ProjectBuildingRequest buildingRequest, Artifact artifact )
+    protected File getLocalRepoFile( Artifact artifact )
     {
-        String path = repositoryManager.getPathForLocalArtifact( buildingRequest, artifact );
-        return new File( repositoryManager.getLocalRepositoryBasedir( buildingRequest ), path );
+        return session.getPathForLocalArtifact( artifact ).toFile();
     }
 
     /**
      * Gets the path of the specified artifact metadata within the local repository. Note that the returned path need
      * not exist (yet).
      *
-     * @param buildingRequest {@link ProjectBuildingRequest}.
      * @param metadata The artifact metadata whose local repo path should be determined, must not be <code>null</code>.
      * @return The absolute path to the artifact metadata when installed, never <code>null</code>.
      */
-    protected File getLocalRepoFile( ProjectBuildingRequest buildingRequest, ProjectArtifactMetadata metadata )
+    protected File getLocalRepoFile( Metadata metadata )
     {
-        String path = repositoryManager.getPathForLocalMetadata( buildingRequest, metadata );
-        return new File( repositoryManager.getLocalRepositoryBasedir( buildingRequest ), path );
+        return session.getPathForLocalMetadata( metadata ).toFile();
     }
 
 }

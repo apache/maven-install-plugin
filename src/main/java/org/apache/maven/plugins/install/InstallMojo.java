@@ -19,24 +19,20 @@ package org.apache.maven.plugins.install;
  * under the License.
  */
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.transfer.artifact.install.ArtifactInstallerException;
-import org.apache.maven.shared.transfer.project.NoFileAssignedException;
-import org.apache.maven.shared.transfer.project.install.ProjectInstaller;
-import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
+import org.apache.maven.api.Project;
+import org.apache.maven.api.plugin.MojoException;
+import org.apache.maven.api.plugin.annotations.Component;
+import org.apache.maven.api.plugin.annotations.LifecyclePhase;
+import org.apache.maven.api.plugin.annotations.Mojo;
+import org.apache.maven.api.plugin.annotations.Parameter;
+import org.apache.maven.api.services.ProjectInstaller;
+import org.apache.maven.api.services.ProjectInstallerException;
+import org.apache.maven.api.services.ProjectInstallerRequest;
 
 /**
  * Installs the project's main artifact, and any other artifacts attached by other plugins in the lifecycle, to the
@@ -44,7 +40,7 @@ import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
  * 
  * @author <a href="mailto:evenisse@apache.org">Emmanuel Venisse</a>
  */
-@Mojo( name = "install", defaultPhase = LifecyclePhase.INSTALL, threadSafe = true )
+@Mojo( name = "install", defaultPhase = LifecyclePhase.INSTALL )
 public class InstallMojo
     extends AbstractInstallMojo
 {
@@ -61,10 +57,10 @@ public class InstallMojo
     /**
      */
     @Parameter( defaultValue = "${project}", readonly = true, required = true )
-    private MavenProject project;
+    private Project project;
 
     @Parameter( defaultValue = "${reactorProjects}", required = true, readonly = true )
-    private List<MavenProject> reactorProjects;
+    private List<Project> reactorProjects;
 
     /**
      * Whether every project should be installed during its own install-phase or at the end of the multimodule build. If
@@ -89,23 +85,24 @@ public class InstallMojo
     private ProjectInstaller installer;
 
     public void execute()
-        throws MojoExecutionException, MojoFailureException
+        throws MojoException
     {
         boolean addedInstallRequest = false;
         if ( skip )
         {
-            getLog().info( "Skipping artifact installation" );
+            logger.info( "Skipping artifact installation" );
         }
         else
         {
             // CHECKSTYLE_OFF: LineLength
             ProjectInstallerRequest projectInstallerRequest =
-                new ProjectInstallerRequest().setProject( project );
+                ProjectInstallerRequest.builder().project( project )
+                        .build();
             // CHECKSTYLE_ON: LineLength
 
             if ( !installAtEnd )
             {
-                installProject( session.getProjectBuildingRequest(), projectInstallerRequest );
+                installProject( projectInstallerRequest );
             }
             else
             {
@@ -121,37 +118,28 @@ public class InstallMojo
             {
                 while ( !INSTALLREQUESTS.isEmpty() )
                 {
-                    installProject( session.getProjectBuildingRequest(), INSTALLREQUESTS.remove( 0 ) );
+                    installProject( INSTALLREQUESTS.remove( 0 ) );
                 }
             }
         }
         else if ( addedInstallRequest )
         {
-            getLog().info( "Installing " + project.getGroupId() + ":" + project.getArtifactId() + ":"
+            logger.info( "Installing " + project.getGroupId() + ":" + project.getArtifactId() + ":"
                 + project.getVersion() + " at end" );
         }
     }
 
-    private void installProject( ProjectBuildingRequest pbr, ProjectInstallerRequest pir )
-        throws MojoFailureException, MojoExecutionException
+    private void installProject( ProjectInstallerRequest pir )
+        throws MojoException
     {
         try
         {
-            installer.install( session.getProjectBuildingRequest(), pir );
+            installer.install( pir );
         }
-        catch ( IOException e )
+        catch ( ProjectInstallerException e )
         {
-            throw new MojoFailureException( "IOException", e );
+            throw new MojoException( "ProjectInstallerException", e );
         }
-        catch ( ArtifactInstallerException e )
-        {
-            throw new MojoExecutionException( "ArtifactInstallerException", e );
-        }
-        catch ( NoFileAssignedException e )
-        {
-            throw new MojoExecutionException( "NoFileAssignedException", e );
-        }
-
     }
 
     public void setSkip( boolean skip )

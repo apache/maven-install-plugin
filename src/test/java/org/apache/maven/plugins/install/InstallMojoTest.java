@@ -26,17 +26,16 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.maven.api.Project;
+import org.apache.maven.api.Session;
+import org.apache.maven.api.plugin.MojoException;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.metadata.ArtifactMetadata;
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.apache.maven.plugins.install.stubs.AttachedArtifactStub0;
 import org.apache.maven.plugins.install.stubs.InstallArtifactStub;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
-import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.transfer.repository.RepositoryManager;
 import org.apache.maven.shared.utils.io.FileUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
@@ -85,7 +84,7 @@ public class InstallMojoTest
         File file = new File( getBasedir(), "target/test-classes/unit/basic-install-test/target/"
             + "maven-install-test-1.0-SNAPSHOT.jar" );
 
-        MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
+        Project project = (Project) getVariableValueFromObject( mojo, "project" );
         updateMavenProject( project );
 
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
@@ -117,7 +116,7 @@ public class InstallMojoTest
 
         assertNotNull( mojo );
 
-        MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
+        Project project = (Project) getVariableValueFromObject( mojo, "project" );
         updateMavenProject( project );
 
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
@@ -159,7 +158,7 @@ public class InstallMojoTest
         File file = new File( getBasedir(), "target/test-classes/unit/configured-install-test/target/"
             + "maven-install-test-1.0-SNAPSHOT.jar" );
 
-        MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
+        Project project = (Project) getVariableValueFromObject( mojo, "project" );
         updateMavenProject( project );
 
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
@@ -185,7 +184,7 @@ public class InstallMojoTest
 
         assertNotNull( mojo );
 
-        MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
+        Project project = (Project) getVariableValueFromObject( mojo, "project" );
         updateMavenProject( project );
 
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
@@ -203,7 +202,7 @@ public class InstallMojoTest
 
             fail( "Did not throw mojo execution exception" );
         }
-        catch ( MojoExecutionException e )
+        catch ( MojoException e )
         {
             //expected
         }
@@ -221,7 +220,7 @@ public class InstallMojoTest
 
         assertNotNull( mojo );
 
-        MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
+        Project project = (Project) getVariableValueFromObject( mojo, "project" );
         updateMavenProject( project );
 
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
@@ -256,8 +255,8 @@ public class InstallMojoTest
 
         File file = new File( getBasedir(), "target/test-classes/unit/basic-install-checksum/" + "maven-test-jar.jar" );
 
-        MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
-        MavenSession mavenSession = createMavenSession();
+        Project project = (Project) getVariableValueFromObject( mojo, "project" );
+        Session mavenSession = createMavenSession();
         updateMavenProject( project );
 
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
@@ -313,7 +312,7 @@ public class InstallMojoTest
         File file = new File( getBasedir(), "target/test-classes/unit/basic-install-test/target/"
             + "maven-install-test-1.0-SNAPSHOT.jar" );
 
-        MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
+        Project project = (Project) getVariableValueFromObject( mojo, "project" );
         updateMavenProject( project );
 
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
@@ -345,9 +344,9 @@ public class InstallMojoTest
         return parameter.replace( '.', '/' );
     }
     
-    private MavenSession createMavenSession() throws NoLocalRepositoryManagerException
+    private Session createMavenSession() throws NoLocalRepositoryManagerException
     {
-        MavenSession session = mock( MavenSession.class );
+        Session session = mock( Session.class );
         DefaultRepositorySystemSession repositorySession  = new DefaultRepositorySystemSession();
         repositorySession.setLocalRepositoryManager(
                 new EnhancedLocalRepositoryManagerFactory().newInstance(
@@ -360,7 +359,7 @@ public class InstallMojoTest
         return session;
     }
     
-    private void updateMavenProject( MavenProject project )
+    private void updateMavenProject( Project project )
     {
        project.setGroupId( project.getArtifact().getGroupId() );
        project.setArtifactId( project.getArtifact().getArtifactId() );
