@@ -22,12 +22,19 @@ under the License.
       <plugin>
         <artifactId>maven-install-plugin</artifactId>
         <configuration>
-          <groupId>org.apache.maven.test</groupId>
-          <artifactId>maven-install-file-test</artifactId>
-          <version>1.0-SNAPSHOT</version>
-          <packaging>jar</packaging>
-          <file>${basedir}/src/test/resources/unit/install-file-with-checksum/maven-test-jar.jar</file>
-          <generatePom>true</generatePom>
+          <project implementation="org.apache.maven.plugins.install.stubs.ProjectStub">
+            <pomPath>${basedir}/src/test/resources/unit/basic-install/packaging-pom.xml</pomPath>
+            <groupId>org.apache.maven.test</groupId>
+            <artifactId>maven-install-test</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <packaging>pom</packaging>
+            <artifact implementation="org.apache.maven.plugins.install.stubs.ArtifactStub">
+              <groupId>org.apache.maven.test</groupId>
+              <artifactId>maven-install-test</artifactId>
+              <version>1.0-SNAPSHOT</version>
+              <extension>pom</extension>
+            </artifact>
+          </project>
         </configuration>
       </plugin>
     </plugins>

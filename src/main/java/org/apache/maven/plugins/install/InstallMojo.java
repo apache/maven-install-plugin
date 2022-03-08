@@ -19,20 +19,24 @@ package org.apache.maven.plugins.install;
  * under the License.
  */
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.maven.api.Artifact;
 import org.apache.maven.api.Project;
 import org.apache.maven.api.plugin.MojoException;
 import org.apache.maven.api.plugin.annotations.Component;
 import org.apache.maven.api.plugin.annotations.LifecyclePhase;
 import org.apache.maven.api.plugin.annotations.Mojo;
 import org.apache.maven.api.plugin.annotations.Parameter;
-import org.apache.maven.api.services.ProjectInstaller;
-import org.apache.maven.api.services.ProjectInstallerException;
-import org.apache.maven.api.services.ProjectInstallerRequest;
+import org.apache.maven.api.services.ArtifactInstaller;
+import org.apache.maven.api.services.ArtifactInstallerException;
+import org.apache.maven.api.services.ArtifactInstallerRequest;
+import org.apache.maven.api.services.ArtifactManager;
+import org.apache.maven.api.services.ProjectManager;
 
 /**
  * Installs the project's main artifact, and any other artifacts attached by other plugins in the lifecycle, to the
@@ -51,15 +55,16 @@ public class InstallMojo
      */
     private static final AtomicInteger READYPROJECTSCOUNTER = new AtomicInteger();
 
-    private static final List<ProjectInstallerRequest> INSTALLREQUESTS =
-        Collections.synchronizedList( new ArrayList<ProjectInstallerRequest>() );
+    private static final List<ArtifactInstallerRequest> INSTALLREQUESTS =
+        Collections.synchronizedList( new ArrayList<>() );
 
     /**
      */
-    @Parameter( defaultValue = "${project}", readonly = true, required = true )
+    @Parameter( defaultValue = "${project}", readonly = true, required = true ) @SuppressWarnings( "unused" )
     private Project project;
 
     @Parameter( defaultValue = "${reactorProjects}", required = true, readonly = true )
+    @SuppressWarnings( { "unused", "MismatchedQueryAndUpdateOfCollection" } )
     private List<Project> reactorProjects;
 
     /**
@@ -69,7 +74,7 @@ public class InstallMojo
      * 
      * @since 2.5
      */
-    @Parameter( defaultValue = "false", property = "installAtEnd" )
+    @Parameter( defaultValue = "false", property = "installAtEnd" ) @SuppressWarnings( "unused" )
     private boolean installAtEnd;
 
     /**
@@ -81,8 +86,11 @@ public class InstallMojo
     @Parameter( property = "maven.install.skip", defaultValue = "false" )
     private boolean skip;
 
-    @Component
-    private ProjectInstaller installer;
+    @Component @SuppressWarnings( "unused" )
+    private ArtifactInstaller installer;
+
+    @Component @SuppressWarnings( "unused" )
+    private ArtifactManager artifactManager;
 
     public void execute()
         throws MojoException
@@ -94,19 +102,44 @@ public class InstallMojo
         }
         else
         {
-            // CHECKSTYLE_OFF: LineLength
-            ProjectInstallerRequest projectInstallerRequest =
-                ProjectInstallerRequest.builder().project( project )
+            List<Artifact> installables = new ArrayList<>();
+
+            installables.add( project.getArtifact() );
+
+            if ( !"pom".equals( project.getPackaging() ) )
+            {
+                Artifact pomArtifact = session.createArtifact(
+                        project.getGroupId(), project.getArtifactId(), "",
+                        project.getVersion(), "pom" );
+                artifactManager.setPath( pomArtifact, project.getPomPath() );
+                installables.add( pomArtifact );
+            }
+
+            ProjectManager projectManager = session.getService( ProjectManager.class );
+            installables.addAll( projectManager.getAttachedArtifacts( project ) );
+
+            for ( Artifact artifact : installables )
+            {
+                Path path = artifactManager.getPath( artifact ).orElse( null );
+                if ( path == null )
+                {
+                    throw new MojoException( "The packaging for this project did not assign "
+                            + "a file to the build artifact" );
+                }
+            }
+
+            ArtifactInstallerRequest artifactInstallerRequest = ArtifactInstallerRequest.builder()
+                        .session( session )
+                        .artifacts( installables )
                         .build();
-            // CHECKSTYLE_ON: LineLength
 
             if ( !installAtEnd )
             {
-                installProject( projectInstallerRequest );
+                installProject( artifactInstallerRequest );
             }
             else
             {
-                INSTALLREQUESTS.add( projectInstallerRequest );
+                INSTALLREQUESTS.add( artifactInstallerRequest );
                 addedInstallRequest = true;
             }
         }
@@ -129,16 +162,16 @@ public class InstallMojo
         }
     }
 
-    private void installProject( ProjectInstallerRequest pir )
+    private void installProject( ArtifactInstallerRequest pir )
         throws MojoException
     {
         try
         {
             installer.install( pir );
         }
-        catch ( ProjectInstallerException e )
+        catch ( ArtifactInstallerException e )
         {
-            throw new MojoException( "ProjectInstallerException", e );
+            throw new MojoException( "ArtifactInstallerRequest", e );
         }
     }
 

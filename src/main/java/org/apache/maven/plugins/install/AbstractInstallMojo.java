@@ -25,9 +25,6 @@ import org.apache.maven.api.Artifact;
 import org.apache.maven.api.Metadata;
 import org.apache.maven.api.Session;
 import org.apache.maven.api.plugin.annotations.Component;
-import org.apache.maven.api.plugin.annotations.Mojo;
-import org.apache.maven.api.plugin.annotations.Parameter;
-import org.apache.maven.api.services.LocalRepositoryManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,9 +40,6 @@ public abstract class AbstractInstallMojo
     protected Logger logger = LoggerFactory.getLogger( getClass() );
 
     @Component
-    protected LocalRepositoryManager repositoryManager;
-
-    @Parameter( defaultValue = "${session}", required = true, readonly = true )
     protected Session session;
 
     /**

@@ -22,11 +22,18 @@ under the License.
       <plugin>
         <artifactId>maven-install-plugin</artifactId>
         <configuration>
-          <project implementation="org.apache.maven.plugin.testing.stubs.MavenProjectStub">
-            <file>${basedir}/src/test/resources/unit/configured-install-test/plugin-config.xml</file>
+          <project implementation="org.apache.maven.plugins.install.stubs.ProjectStub">
+            <pomPath>${basedir}/src/test/resources/unit/basic-install/test.xml</pomPath>
+            <groupId>org.apache.maven.test</groupId>
+            <artifactId>maven-install-test</artifactId>
+            <version>1.0-SNAPSHOT</version>
             <packaging>jar</packaging>
-            <artifact implementation="org.apache.maven.plugins.install.stubs.InstallArtifactStub"/>
-            <attachedArtifacts/>
+            <artifact implementation="org.apache.maven.plugins.install.stubs.ArtifactStub">
+              <groupId>org.apache.maven.test</groupId>
+              <artifactId>maven-install-test</artifactId>
+              <version>1.0-SNAPSHOT</version>
+              <extension>jar</extension>
+            </artifact>
           </project>
         </configuration>
       </plugin>

@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.JarEntry;
@@ -38,8 +39,6 @@ import org.apache.maven.api.plugin.MojoException;
 import org.apache.maven.api.plugin.annotations.Component;
 import org.apache.maven.api.plugin.annotations.Mojo;
 import org.apache.maven.api.plugin.annotations.Parameter;
-import org.apache.maven.api.services.ArtifactFactory;
-import org.apache.maven.api.services.ArtifactFactoryRequest;
 import org.apache.maven.api.services.ArtifactInstaller;
 import org.apache.maven.api.services.ArtifactManager;
 import org.apache.maven.model.Model;
@@ -47,7 +46,6 @@ import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.shared.utils.WriterFactory;
-import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.xml.XmlStreamReader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
@@ -95,13 +93,13 @@ public class InstallFileMojo
      * 
      * @since 2.2
      */
-    @Parameter( property = "classifier" )
+    @Parameter( property = "classifier" ) @SuppressWarnings( "unused" )
     private String classifier;
 
     /**
      * The file to be installed in the local repository.
      */
-    @Parameter( property = "file", required = true )
+    @Parameter( property = "file", required = true ) @SuppressWarnings( "unused" )
     private File file;
 
     /**
@@ -109,7 +107,7 @@ public class InstallFileMojo
      * 
      * @since 2.3
      */
-    @Parameter( property = "javadoc" )
+    @Parameter( property = "javadoc" ) @SuppressWarnings( "unused" )
     private File javadoc;
 
     /**
@@ -117,7 +115,7 @@ public class InstallFileMojo
      * 
      * @since 2.3
      */
-    @Parameter( property = "sources" )
+    @Parameter( property = "sources" ) @SuppressWarnings( "unused" )
     private File sources;
 
     /**
@@ -135,7 +133,7 @@ public class InstallFileMojo
      * 
      * @since 2.1
      */
-    @Parameter( property = "generatePom" )
+    @Parameter( property = "generatePom" ) @SuppressWarnings( "unused" )
     private Boolean generatePom;
 
     /**
@@ -144,16 +142,13 @@ public class InstallFileMojo
      * 
      * @since 2.2
      */
-    @Parameter( property = "localRepositoryPath" )
+    @Parameter( property = "localRepositoryPath" ) @SuppressWarnings( "unused" )
     private File localRepositoryPath;
 
-    /**
-     * Used to install the project created.
-     */
-    @Component
-    private ArtifactInstaller installer;
+    @Component @SuppressWarnings( "unused" )
+    private ArtifactInstaller artifactInstaller;
 
-    @Component
+    @Component @SuppressWarnings( "unused" )
     private ArtifactManager artifactManager;
 
     /**
@@ -199,16 +194,7 @@ public class InstallFileMojo
         // We need to set a new ArtifactHandler otherwise
         // the extension will be set to the packaging type
         // which is sometimes wrong.
-        Artifact artifact = session.getService( ArtifactFactory.class )
-                .create( ArtifactFactoryRequest.builder()
-                        .session( session )
-                        .groupId( groupId )
-                        .artifactId( artifactId )
-                        .classifier( classifier )
-                        .version( version )
-                        .extension( FileUtils.getExtension( file.getName() ) )
-                        .type( packaging )
-                        .build() );
+        Artifact artifact = session.createArtifact( groupId, artifactId, classifier, version, packaging );
 
         if ( file.equals( getLocalRepoFile( artifact ) ) )
         {
@@ -221,19 +207,11 @@ public class InstallFileMojo
 
         if ( !"pom".equals( packaging ) )
         {
-            Artifact pomArtifact = session.getService( ArtifactFactory.class )
-                    .create( ArtifactFactoryRequest.builder()
-                            .session( session )
-                            .groupId( groupId )
-                            .artifactId( artifactId )
-                            .classifier( classifier )
-                            .version( version )
-                            .type( "pom" )
-                            .build() );
+            Artifact pomArtifact = session.createArtifact( groupId, artifactId, "", version, "pom" );
             if ( pomFile != null )
             {
                 artifactManager.setPath( pomArtifact, pomFile.toPath() );
-                installableArtifacts.add( artifact );
+                installableArtifacts.add( pomArtifact );
             }
             else
             {
@@ -243,7 +221,7 @@ public class InstallFileMojo
                     || ( generatePom == null && !getLocalRepoFile( pomArtifact ).exists() ) )
                 {
                     logger.debug( "Installing generated POM" );
-                    installableArtifacts.add( artifact );
+                    installableArtifacts.add( pomArtifact );
                 }
                 else if ( generatePom == null )
                 {
@@ -254,37 +232,21 @@ public class InstallFileMojo
 
         if ( sources != null )
         {
-            Artifact sourcesArtifact = session.getService( ArtifactFactory.class )
-                    .create( ArtifactFactoryRequest.builder()
-                            .session( session )
-                            .groupId( groupId )
-                            .artifactId( artifactId )
-                            .classifier( "sources" )
-                            .version( version )
-                            .type( "jar" )
-                            .build() );
+            Artifact sourcesArtifact = session.createArtifact( groupId, artifactId, "sources", version, "jar" );
             artifactManager.setPath( sourcesArtifact, sources.toPath() );
-            installableArtifacts.add( artifact );
+            installableArtifacts.add( sourcesArtifact );
         }
 
         if ( javadoc != null )
         {
-            Artifact sourcesArtifact = session.getService( ArtifactFactory.class )
-                    .create( ArtifactFactoryRequest.builder()
-                            .session( session )
-                            .groupId( groupId )
-                            .artifactId( artifactId )
-                            .classifier( "javadoc" )
-                            .version( version )
-                            .type( "jar" )
-                            .build() );
-            artifactManager.setPath( sourcesArtifact, javadoc.toPath() );
-            installableArtifacts.add( artifact );
+            Artifact javadocArtifact = session.createArtifact( groupId, artifactId, "javadoc", version, "jar" );
+            artifactManager.setPath( javadocArtifact, javadoc.toPath() );
+            installableArtifacts.add( javadocArtifact );
         }
 
         try
         {
-            installer.install( session, installableArtifacts );
+            artifactInstaller.install( session, installableArtifacts );
         }
         catch ( Exception e )
         {
@@ -328,7 +290,7 @@ public class InstallFileMojo
 
                 try ( InputStream pomInputStream = jarFile.getInputStream( entry ) )
                 {
-                    Files.copy( pomInputStream, pomFile.toPath() );
+                    Files.copy( pomInputStream, pomFile.toPath(), StandardCopyOption.REPLACE_EXISTING );
                 }
 
                 processModel( readModel( pomFile ) );
@@ -342,6 +304,7 @@ public class InstallFileMojo
         catch ( IOException e )
         {
             // ignore, artifact not packaged by Maven
+            logger.trace( "Error reading pom from jar", e );
         }
         return pomFile;
     }
@@ -358,8 +321,7 @@ public class InstallFileMojo
     {
         try ( Reader reader = new XmlStreamReader( pomFile ) )
         {
-            final Model model = new MavenXpp3Reader().read( reader );
-            return model;
+            return new MavenXpp3Reader().read( reader );
         }
         catch ( FileNotFoundException e )
         {
