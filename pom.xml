@@ -63,7 +63,7 @@
   </distributionManagement>
 
   <properties>
-    <mavenVersion>3.2.5</mavenVersion>
+    <mavenVersion>3.8.5</mavenVersion>
     <slf4jVersion>1.7.32</slf4jVersion>
     <aetherVersion>1.1.0</aetherVersion>
     <javaVersion>7</javaVersion>
