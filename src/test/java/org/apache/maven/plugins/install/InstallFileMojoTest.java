@@ -21,7 +21,6 @@ package org.apache.maven.plugins.install;
 
 import java.io.File;
 import java.io.Reader;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
@@ -217,7 +216,7 @@ public class InstallFileMojoTest
         InstallFileMojo mojo = (InstallFileMojo) lookupMojo( "install-file", testPom );
 
         assertNotNull( mojo );
-
+        
         setVariableValueToObject( mojo, "session", createMavenSession() );
 
         assignValuesForParameter( mojo );
@@ -245,7 +244,7 @@ public class InstallFileMojoTest
         InstallFileMojo mojo = (InstallFileMojo) lookupMojo( "install-file", testPom );
 
         assertNotNull( mojo );
-
+        
         setVariableValueToObject( mojo, "session", createMavenSession() );
 
         assignValuesForParameter( mojo );
