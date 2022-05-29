@@ -86,7 +86,6 @@ public class InstallMojo
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
-        boolean addedInstallRequest = false;
         if ( skip )
         {
             getPluginContext().put( INSTALL_PROCESSED_MARKER, Boolean.FALSE );
@@ -101,7 +100,7 @@ public class InstallMojo
             else
             {
                 getPluginContext().put( INSTALL_PROCESSED_MARKER, Boolean.TRUE );
-                addedInstallRequest = true;
+                getLog().info( "Installing " + getProjectReferenceId( project ) + " at end" );
             }
         }
 
@@ -122,10 +121,6 @@ public class InstallMojo
                     installProject( reactorProject );
                 }
             }
-        }
-        else if ( addedInstallRequest )
-        {
-            getLog().info( "Installing " + getProjectReferenceId( project ) + " at end" );
         }
     }
 
