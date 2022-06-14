@@ -23,6 +23,8 @@ updates:
     time: '04:00'
   open-pull-requests-limit: 10
   ignore:
+    # Ignore Maven Core updates
+    - dependency-name: "org.apache.maven:*"
     # ignore Java 8+ dependencies
     - dependency-name: org.mockito:mockito-core
       versions:
