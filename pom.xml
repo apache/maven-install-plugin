@@ -63,10 +63,10 @@
   </distributionManagement>
 
   <properties>
-    <mavenVersion>3.2.5</mavenVersion>
-    <slf4jVersion>1.7.32</slf4jVersion>
-    <aetherVersion>1.1.0</aetherVersion>
     <javaVersion>7</javaVersion>
+    <mavenVersion>3.2.5</mavenVersion>
+    <aetherVersion>1.0.0.v20140518</aetherVersion> <!-- Maven bound -->
+    <slf4jVersion>1.7.5</slf4jVersion> <!-- Maven bound -->
     <project.build.outputTimestamp>2020-04-07T21:04:00Z</project.build.outputTimestamp>
   </properties>
 
@@ -97,9 +97,20 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.maven.shared</groupId>
-      <artifactId>maven-artifact-transfer</artifactId>
-      <version>0.13.1</version>
+      <groupId>org.eclipse.aether</groupId>
+      <artifactId>aether-api</artifactId>
+      <version>${aetherVersion}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.aether</groupId>
+      <artifactId>aether-util</artifactId>
+      <version>${aetherVersion}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
     </dependency>
 
     <!-- dependencies to annotations -->
@@ -143,18 +154,6 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-nop</artifactId>
       <version>${slf4jVersion}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-api</artifactId>
-      <version>${aetherVersion}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-util</artifactId>
-      <version>${aetherVersion}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

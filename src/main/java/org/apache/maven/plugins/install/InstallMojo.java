@@ -19,7 +19,6 @@ package org.apache.maven.plugins.install;
  * under the License.
  */
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,16 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.transfer.artifact.install.ArtifactInstallerException;
-import org.apache.maven.shared.transfer.project.NoFileAssignedException;
-import org.apache.maven.shared.transfer.project.install.ProjectInstaller;
-import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
 
 /**
  * Installs the project's main artifact, and any other artifacts attached by other plugins in the lifecycle, to the
@@ -55,8 +48,8 @@ public class InstallMojo
      */
     private static final AtomicInteger READYPROJECTSCOUNTER = new AtomicInteger();
 
-    private static final List<ProjectInstallerRequest> INSTALLREQUESTS =
-        Collections.synchronizedList( new ArrayList<ProjectInstallerRequest>() );
+    private static final List<MavenProject> INSTALLREQUESTS =
+        Collections.synchronizedList( new ArrayList<MavenProject>() );
 
     /**
      */
@@ -85,9 +78,6 @@ public class InstallMojo
     @Parameter( property = "maven.install.skip", defaultValue = "false" )
     private boolean skip;
 
-    @Component
-    private ProjectInstaller installer;
-
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
@@ -98,18 +88,13 @@ public class InstallMojo
         }
         else
         {
-            // CHECKSTYLE_OFF: LineLength
-            ProjectInstallerRequest projectInstallerRequest =
-                new ProjectInstallerRequest().setProject( project );
-            // CHECKSTYLE_ON: LineLength
-
             if ( !installAtEnd )
             {
-                installProject( session.getProjectBuildingRequest(), projectInstallerRequest );
+                installProject( project );
             }
             else
             {
-                INSTALLREQUESTS.add( projectInstallerRequest );
+                INSTALLREQUESTS.add( project );
                 addedInstallRequest = true;
             }
         }
@@ -121,7 +106,7 @@ public class InstallMojo
             {
                 while ( !INSTALLREQUESTS.isEmpty() )
                 {
-                    installProject( session.getProjectBuildingRequest(), INSTALLREQUESTS.remove( 0 ) );
+                    installProject( INSTALLREQUESTS.remove( 0 ) );
                 }
             }
         }
@@ -132,28 +117,9 @@ public class InstallMojo
         }
     }
 
-    private void installProject( ProjectBuildingRequest pbr, ProjectInstallerRequest pir )
-        throws MojoFailureException, MojoExecutionException
-    {
-        try
-        {
-            installer.install( session.getProjectBuildingRequest(), pir );
-        }
-        catch ( IOException e )
-        {
-            throw new MojoFailureException( "IOException", e );
-        }
-        catch ( ArtifactInstallerException e )
-        {
-            throw new MojoExecutionException( "ArtifactInstallerException", e );
-        }
-        catch ( NoFileAssignedException e )
-        {
-            throw new MojoExecutionException( "NoFileAssignedException", e );
-        }
-
-    }
-
+    /**
+     * Visible for testing.
+     */
     public void setSkip( boolean skip )
     {
         this.skip = skip;

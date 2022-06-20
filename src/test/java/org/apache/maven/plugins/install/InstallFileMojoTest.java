@@ -28,8 +28,8 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.utils.ReaderFactory;
-import org.apache.maven.shared.utils.io.FileUtils;
+import org.codehaus.plexus.util.FileUtils;
+import org.codehaus.plexus.util.xml.XmlStreamReader;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
@@ -159,7 +159,7 @@ public class InstallFileMojoTest
         File installedPom = new File( getBasedir(), LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" +
             artifactId + "-" + version + "." + "pom" );
 
-        try ( Reader reader = ReaderFactory.newXmlReader( installedPom ) ) {
+        try ( Reader reader = new XmlStreamReader( installedPom ) ) {
             Model model = new MavenXpp3Reader().read( reader );
 
             assertEquals( "4.0.0", model.getModelVersion() );
@@ -258,7 +258,7 @@ public class InstallFileMojoTest
         
         assertTrue( installedArtifact.exists() );
         
-        assertEquals( 5, FileUtils.getFiles( new File( LOCAL_REPO ), null, null ).size() );
+        assertEquals( FileUtils.getFiles( new File( LOCAL_REPO ), null, null ).toString(), 5, FileUtils.getFiles( new File( LOCAL_REPO ), null, null ).size() );
     }
 
     private void assignValuesForParameter( Object obj )
@@ -294,6 +294,7 @@ public class InstallFileMojoTest
         ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
         buildingRequest.setRepositorySession( repositorySession );
         when( session.getProjectBuildingRequest() ).thenReturn( buildingRequest );
+        when( session.getRepositorySession() ).thenReturn( repositorySession );
         return session;
     }
 }

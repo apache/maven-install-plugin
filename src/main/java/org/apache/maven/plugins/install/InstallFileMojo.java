@@ -21,12 +21,12 @@ package org.apache.maven.plugins.install;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.file.Files;
 import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -34,6 +34,7 @@ import java.util.regex.Pattern;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.building.ModelBuildingException;
@@ -53,14 +54,15 @@ import org.apache.maven.project.ProjectBuilder;
 import org.apache.maven.project.ProjectBuildingException;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.project.artifact.ProjectArtifactMetadata;
-import org.apache.maven.shared.transfer.project.install.ProjectInstaller;
-import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
-import org.apache.maven.shared.utils.Os;
-import org.apache.maven.shared.utils.ReaderFactory;
-import org.apache.maven.shared.utils.WriterFactory;
-import org.apache.maven.shared.utils.io.IOUtil;
 import org.codehaus.plexus.util.FileUtils;
+import org.codehaus.plexus.util.IOUtil;
+import org.codehaus.plexus.util.xml.XmlStreamReader;
+import org.codehaus.plexus.util.xml.XmlStreamWriter;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.eclipse.aether.DefaultRepositoryCache;
+import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.repository.LocalRepositoryManager;
 
 /**
  * Installs a file in the local repository.
@@ -71,6 +73,7 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 public class InstallFileMojo
     extends AbstractInstallMojo
 {
+    private static final String LINE_SEP = System.getProperty( "line.separator" );
 
     /**
      * GroupId of the artifact to be installed. Retrieved from POM file if one is specified or extracted from
@@ -171,18 +174,11 @@ public class InstallFileMojo
     private ProjectBuilder projectBuilder;
 
     /**
-     * Used to install the project created.
-     */
-    @Component
-    private ProjectInstaller installer;
-
-    /**
      * @see org.apache.maven.plugin.Mojo#execute()
      */
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
-
         if ( !file.exists() )
         {
             String message = "The specified file '" + file.getPath() + "' does not exist";
@@ -190,16 +186,24 @@ public class InstallFileMojo
             throw new MojoFailureException( message );
         }
 
-        ProjectBuildingRequest buildingRequest = session.getProjectBuildingRequest();
-
-        // ----------------------------------------------------------------------
-        // Override the default localRepository variable
-        // ----------------------------------------------------------------------
         if ( localRepositoryPath != null )
         {
-            buildingRequest = repositoryManager.setLocalRepositoryBasedir( buildingRequest, localRepositoryPath );
-
-            getLog().debug( "localRepoPath: " + repositoryManager.getLocalRepositoryBasedir( buildingRequest ) );
+            // "clone" session and replace localRepository
+            DefaultRepositorySystemSession newSession = new DefaultRepositorySystemSession(
+                    session.getRepositorySession() );
+            // Clear cache, since we're using a new local repository
+            newSession.setCache( new DefaultRepositoryCache() );
+            // keep same repositoryType
+            String contentType = newSession.getLocalRepository().getContentType();
+            if ( "enhanced".equals( contentType ) )
+            {
+                contentType = "default";
+            }
+            LocalRepositoryManager localRepositoryManager = repositorySystem.newLocalRepositoryManager( newSession,
+                    new LocalRepository( localRepositoryPath, contentType ) );
+            newSession.setLocalRepositoryManager( localRepositoryManager );
+            this.session = new MavenSession(
+                    session.getContainer(), newSession, session.getRequest(), session.getResult() );
         }
 
         File temporaryPom = null;
@@ -225,7 +229,7 @@ public class InstallFileMojo
         project.getArtifact().setArtifactHandler( ah );
         Artifact artifact = project.getArtifact();
 
-        if ( file.equals( getLocalRepoFile( buildingRequest, artifact ) ) )
+        if ( file.equals( getLocalRepoFile( artifact ) ) )
         {
             throw new MojoFailureException( "Cannot install artifact. "
                 + "Artifact is already in the local repository.\n\nFile in question is: " + file + "\n" );
@@ -262,7 +266,7 @@ public class InstallFileMojo
                 temporaryPom = generatePomFile();
                 ProjectArtifactMetadata pomMetadata = new ProjectArtifactMetadata( artifact, temporaryPom );
                 if ( Boolean.TRUE.equals( generatePom )
-                    || ( generatePom == null && !getLocalRepoFile( buildingRequest, pomMetadata ).exists() ) )
+                    || ( generatePom == null && !getLocalRepoFile( pomMetadata ).exists() ) )
                 {
                     getLog().debug( "Installing generated POM" );
                     if ( classifier == null )
@@ -293,12 +297,7 @@ public class InstallFileMojo
 
         try
         {
-            // CHECKSTYLE_OFF: LineLength
-            ProjectInstallerRequest projectInstallerRequest =
-                new ProjectInstallerRequest().setProject( project );
-            // CHECKSTYLE_ON: LineLength
-
-            installer.install( buildingRequest, projectInstallerRequest );
+            installProject( project );
         }
         catch ( Exception e )
         {
@@ -344,7 +343,7 @@ public class InstallFileMojo
         {
             if ( e.getCause() instanceof ModelBuildingException )
             {
-                throw new MojoExecutionException( "The artifact information is not valid:" + Os.LINE_SEP
+                throw new MojoExecutionException( "The artifact information is not valid:" + LINE_SEP
                     + e.getCause().getMessage() );
             }
             throw new MojoFailureException( "Unable to create the project.", e );
@@ -387,7 +386,7 @@ public class InstallFileMojo
                         }
                         pomFile = File.createTempFile( base, ".pom" );
 
-                        pomOutputStream = new FileOutputStream( pomFile );
+                        pomOutputStream = Files.newOutputStream( pomFile.toPath() );
 
                         IOUtil.copy( pomInputStream, pomOutputStream );
 
@@ -448,7 +447,7 @@ public class InstallFileMojo
         Reader reader = null;
         try
         {
-            reader = ReaderFactory.newXmlReader( pomFile );
+            reader = new XmlStreamReader( pomFile );
             final Model model = new MavenXpp3Reader().read( reader );
             reader.close();
             reader = null;
@@ -545,7 +544,7 @@ public class InstallFileMojo
         {
             File pomFile = File.createTempFile( "mvninstall", ".pom" );
 
-            writer = WriterFactory.newXmlWriter( pomFile );
+            writer = new XmlStreamWriter( pomFile );
             new MavenXpp3Writer().write( writer, model );
             writer.close();
             writer = null;

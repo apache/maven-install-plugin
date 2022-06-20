@@ -26,6 +26,7 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.metadata.ArtifactMetadata;
 import org.apache.maven.execution.MavenSession;
@@ -36,9 +37,9 @@ import org.apache.maven.plugins.install.stubs.InstallArtifactStub;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.transfer.repository.RepositoryManager;
-import org.apache.maven.shared.utils.io.FileUtils;
+import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
@@ -279,12 +280,7 @@ public class InstallMojoTest
             }
         }
 
-        RepositoryManager repoManager = (RepositoryManager) getVariableValueFromObject( mojo, "repositoryManager" );
-        
-        ProjectBuildingRequest pbr = mavenSession.getProjectBuildingRequest();
-
-        File pom = new File( repoManager.getLocalRepositoryBasedir( pbr ),
-                             repoManager.getPathForLocalMetadata( pbr, metadata ) );
+        File pom = new File( new File( LOCAL_REPO ), mavenSession.getRepositorySession().getLocalRepositoryManager().getPathForLocalArtifact( new DefaultArtifact( artifact.getGroupId(), artifact.getArtifactId(), "pom", artifact.getVersion() ) ) );
 
         assertTrue( pom.exists() );
 
@@ -357,6 +353,7 @@ public class InstallMojoTest
         ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
         buildingRequest.setRepositorySession( repositorySession );
         when( session.getProjectBuildingRequest() ).thenReturn( buildingRequest );
+        when( session.getRepositorySession() ).thenReturn( repositorySession );
         return session;
     }
     
