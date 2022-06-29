@@ -91,6 +91,7 @@ public class InstallMojoTest
         MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
         updateMavenProject( project );
 
+        setVariableValueToObject( mojo, "pluginContext", new ConcurrentHashMap<>() );
         setVariableValueToObject( mojo, "pluginDescriptor", new PluginDescriptor() );
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
         setVariableValueToObject( mojo, "session", createMavenSession() );
@@ -124,6 +125,7 @@ public class InstallMojoTest
         MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
         updateMavenProject( project );
 
+        setVariableValueToObject( mojo, "pluginContext", new ConcurrentHashMap<>() );
         setVariableValueToObject( mojo, "pluginDescriptor", new PluginDescriptor() );
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
         setVariableValueToObject( mojo, "session", createMavenSession() );
@@ -167,6 +169,7 @@ public class InstallMojoTest
         MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
         updateMavenProject( project );
 
+        setVariableValueToObject( mojo, "pluginContext", new ConcurrentHashMap<>() );
         setVariableValueToObject( mojo, "pluginDescriptor", new PluginDescriptor() );
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
         setVariableValueToObject( mojo, "session", createMavenSession() );
@@ -194,6 +197,7 @@ public class InstallMojoTest
         MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
         updateMavenProject( project );
 
+        setVariableValueToObject( mojo, "pluginContext", new ConcurrentHashMap<>() );
         setVariableValueToObject( mojo, "pluginDescriptor", new PluginDescriptor() );
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
         setVariableValueToObject( mojo, "session", createMavenSession() );
@@ -231,6 +235,7 @@ public class InstallMojoTest
         MavenProject project = (MavenProject) getVariableValueFromObject( mojo, "project" );
         updateMavenProject( project );
 
+        setVariableValueToObject( mojo, "pluginContext", new ConcurrentHashMap<>() );
         setVariableValueToObject( mojo, "pluginDescriptor", new PluginDescriptor() );
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
         setVariableValueToObject( mojo, "session", createMavenSession() );
@@ -268,6 +273,7 @@ public class InstallMojoTest
         MavenSession mavenSession = createMavenSession();
         updateMavenProject( project );
 
+        setVariableValueToObject( mojo, "pluginContext", new ConcurrentHashMap<>() );
         setVariableValueToObject( mojo, "pluginDescriptor", new PluginDescriptor() );
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
         setVariableValueToObject( mojo, "session", mavenSession );

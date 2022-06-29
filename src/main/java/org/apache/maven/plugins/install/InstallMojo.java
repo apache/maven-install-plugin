@@ -83,24 +83,30 @@ public class InstallMojo
     @Component
     private ProjectInstaller installer;
 
+    private enum State
+    {
+        SKIPPED, INSTALLED, TO_BE_INSTALLED
+    }
+
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
         if ( skip )
         {
-            getPluginContext().put( INSTALL_PROCESSED_MARKER, Boolean.FALSE );
             getLog().info( "Skipping artifact installation" );
+            getPluginContext().put( INSTALL_PROCESSED_MARKER, State.SKIPPED.name() );
         }
         else
         {
             if ( !installAtEnd )
             {
                 installProject( project );
+                getPluginContext().put( INSTALL_PROCESSED_MARKER, State.INSTALLED.name() );
             }
             else
             {
-                getPluginContext().put( INSTALL_PROCESSED_MARKER, Boolean.TRUE );
                 getLog().info( "Installing " + getProjectReferenceId( project ) + " at end" );
+                getPluginContext().put( INSTALL_PROCESSED_MARKER, State.TO_BE_INSTALLED.name() );
             }
         }
 
@@ -109,14 +115,8 @@ public class InstallMojo
             for ( MavenProject reactorProject : reactorProjects )
             {
                 Map<String, Object> pluginContext = session.getPluginContext( pluginDescriptor, reactorProject );
-                Boolean install = (Boolean) pluginContext.get( INSTALL_PROCESSED_MARKER );
-                if ( !install )
-                {
-                    getLog().info(
-                        "Project " + getProjectReferenceId( reactorProject ) + " skipped install"
-                    );
-                }
-                else
+                State state =  State.valueOf( (String) pluginContext.get( INSTALL_PROCESSED_MARKER ) );
+                if ( state == State.TO_BE_INSTALLED )
                 {
                     installProject( reactorProject );
                 }
