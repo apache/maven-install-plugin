@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
@@ -47,16 +46,11 @@ import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
 public class InstallMojo
     extends AbstractInstallMojo
 {
-    private static final String INSTALL_PROCESSED_MARKER = InstallMojo.class.getName() + ".processed";
-
     @Parameter( defaultValue = "${project}", readonly = true, required = true )
     private MavenProject project;
 
     @Parameter( defaultValue = "${reactorProjects}", required = true, readonly = true )
     private List<MavenProject> reactorProjects;
-
-    @Parameter( defaultValue = "${session}", required = true, readonly = true )
-    private MavenSession session;
 
     @Parameter( defaultValue = "${plugin}", required = true, readonly = true )
     private PluginDescriptor pluginDescriptor;
@@ -88,25 +82,44 @@ public class InstallMojo
         SKIPPED, INSTALLED, TO_BE_INSTALLED
     }
 
+    private static final String INSTALL_PROCESSED_MARKER = InstallMojo.class.getName() + ".processed";
+
+    private void putState( State state )
+    {
+        getPluginContext().put( INSTALL_PROCESSED_MARKER, state.name() );
+    }
+
+    private State getState( MavenProject project )
+    {
+        Map<String, Object> pluginContext = session.getPluginContext( pluginDescriptor, project );
+        return State.valueOf( (String) pluginContext.get( INSTALL_PROCESSED_MARKER ) );
+    }
+
+    private boolean hasState( MavenProject project )
+    {
+        Map<String, Object> pluginContext = session.getPluginContext( pluginDescriptor, project );
+        return pluginContext.containsKey( INSTALL_PROCESSED_MARKER );
+    }
+
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
         if ( skip )
         {
             getLog().info( "Skipping artifact installation" );
-            getPluginContext().put( INSTALL_PROCESSED_MARKER, State.SKIPPED.name() );
+            putState( State.SKIPPED );
         }
         else
         {
             if ( !installAtEnd )
             {
                 installProject( project );
-                getPluginContext().put( INSTALL_PROCESSED_MARKER, State.INSTALLED.name() );
+                putState( State.INSTALLED );
             }
             else
             {
-                getLog().info( "Installing " + getProjectReferenceId( project ) + " at end" );
-                getPluginContext().put( INSTALL_PROCESSED_MARKER, State.TO_BE_INSTALLED.name() );
+                getLog().info( "Deferring install for " + getProjectReferenceId( project ) + " at end" );
+                putState( State.TO_BE_INSTALLED );
             }
         }
 
@@ -114,8 +127,7 @@ public class InstallMojo
         {
             for ( MavenProject reactorProject : reactorProjects )
             {
-                Map<String, Object> pluginContext = session.getPluginContext( pluginDescriptor, reactorProject );
-                State state =  State.valueOf( (String) pluginContext.get( INSTALL_PROCESSED_MARKER ) );
+                State state = getState( reactorProject );
                 if ( state == State.TO_BE_INSTALLED )
                 {
                     installProject( reactorProject );
@@ -133,8 +145,7 @@ public class InstallMojo
     {
         for ( MavenProject reactorProject : reactorProjects )
         {
-            Map<String, Object> pluginContext = session.getPluginContext( pluginDescriptor, reactorProject );
-            if ( !pluginContext.containsKey( INSTALL_PROCESSED_MARKER ) )
+            if ( !hasState( reactorProject ) )
             {
                 return false;
             }
