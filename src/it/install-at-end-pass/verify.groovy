@@ -22,5 +22,5 @@ assert new File( basedir, "../../local-repo/org/apache/maven/its/install/dae/pas
 
 File buildLog = new File( basedir, 'build.log' )
 assert buildLog.exists()
-assert buildLog.text.contains( "[INFO] Installing org.apache.maven.its.install.dae.pass:dae:1.0 at end" )
+assert buildLog.text.contains( "[INFO] Deferring install for org.apache.maven.its.install.dae.pass:dae:1.0 at end" )
 
