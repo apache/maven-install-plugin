@@ -19,13 +19,12 @@ package org.apache.maven.plugins.install;
  * under the License.
  */
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Map;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -41,23 +40,14 @@ import org.apache.maven.project.MavenProject;
 public class InstallMojo
     extends AbstractInstallMojo
 {
-
-    /**
-     * When building with multiple threads, reaching the last project doesn't have to mean that all projects are ready
-     * to be installed
-     */
-    private static final AtomicInteger READYPROJECTSCOUNTER = new AtomicInteger();
-
-    private static final List<MavenProject> INSTALLREQUESTS =
-        Collections.synchronizedList( new ArrayList<MavenProject>() );
-
-    /**
-     */
     @Parameter( defaultValue = "${project}", readonly = true, required = true )
     private MavenProject project;
 
     @Parameter( defaultValue = "${reactorProjects}", required = true, readonly = true )
     private List<MavenProject> reactorProjects;
+
+    @Parameter( defaultValue = "${plugin}", required = true, readonly = true )
+    private PluginDescriptor pluginDescriptor;
 
     /**
      * Whether every project should be installed during its own install-phase or at the end of the multimodule build. If
@@ -78,48 +68,85 @@ public class InstallMojo
     @Parameter( property = "maven.install.skip", defaultValue = "false" )
     private boolean skip;
 
+    private enum State
+    {
+        SKIPPED, INSTALLED, TO_BE_INSTALLED
+    }
+
+    private static final String INSTALL_PROCESSED_MARKER = InstallMojo.class.getName() + ".processed";
+
+    private void putState( State state )
+    {
+        getPluginContext().put( INSTALL_PROCESSED_MARKER, state.name() );
+    }
+
+    private State getState( MavenProject project )
+    {
+        Map<String, Object> pluginContext = session.getPluginContext( pluginDescriptor, project );
+        return State.valueOf( (String) pluginContext.get( INSTALL_PROCESSED_MARKER ) );
+    }
+
+    private boolean hasState( MavenProject project )
+    {
+        Map<String, Object> pluginContext = session.getPluginContext( pluginDescriptor, project );
+        return pluginContext.containsKey( INSTALL_PROCESSED_MARKER );
+    }
+
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
-        boolean addedInstallRequest = false;
         if ( skip )
         {
             getLog().info( "Skipping artifact installation" );
+            putState( State.SKIPPED );
         }
         else
         {
             if ( !installAtEnd )
             {
                 installProject( project );
+                putState( State.INSTALLED );
             }
             else
             {
-                INSTALLREQUESTS.add( project );
-                addedInstallRequest = true;
+                getLog().info( "Deferring install for " + getProjectReferenceId( project ) + " at end" );
+                putState( State.TO_BE_INSTALLED );
             }
         }
 
-        boolean projectsReady = READYPROJECTSCOUNTER.incrementAndGet() == reactorProjects.size();
-        if ( projectsReady )
+        if ( allProjectsMarked() )
         {
-            synchronized ( INSTALLREQUESTS )
+            for ( MavenProject reactorProject : reactorProjects )
             {
-                while ( !INSTALLREQUESTS.isEmpty() )
+                State state = getState( reactorProject );
+                if ( state == State.TO_BE_INSTALLED )
                 {
-                    installProject( INSTALLREQUESTS.remove( 0 ) );
+                    installProject( reactorProject );
                 }
             }
-        }
-        else if ( addedInstallRequest )
-        {
-            getLog().info( "Installing " + project.getGroupId() + ":" + project.getArtifactId() + ":"
-                + project.getVersion() + " at end" );
         }
     }
 
     /**
      * Visible for testing.
      */
+    private String getProjectReferenceId( MavenProject mavenProject )
+    {
+        return mavenProject.getGroupId() + ":" + mavenProject.getArtifactId() + ":" + mavenProject.getVersion();
+    }
+
+    private boolean allProjectsMarked()
+    {
+        for ( MavenProject reactorProject : reactorProjects )
+        {
+            if ( !hasState( reactorProject ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public void setSkip( boolean skip )
     {
         this.skip = skip;
