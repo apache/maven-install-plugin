@@ -73,7 +73,7 @@ import org.eclipse.aether.repository.LocalRepositoryManager;
 public class InstallFileMojo
     extends AbstractInstallMojo
 {
-    private static final String LINE_SEP = System.getProperty( "line.separator" );
+    private static final String LS = System.getProperty( "line.separator" );
 
     /**
      * GroupId of the artifact to be installed. Retrieved from POM file if one is specified or extracted from
@@ -188,7 +188,7 @@ public class InstallFileMojo
 
         if ( localRepositoryPath != null )
         {
-            // "clone" session and replace localRepository
+            // "clone" repository session and replace localRepository
             DefaultRepositorySystemSession newSession = new DefaultRepositorySystemSession(
                     session.getRepositorySession() );
             // Clear cache, since we're using a new local repository
@@ -232,7 +232,7 @@ public class InstallFileMojo
         if ( file.equals( getLocalRepoFile( artifact ) ) )
         {
             throw new MojoFailureException( "Cannot install artifact. "
-                + "Artifact is already in the local repository.\n\nFile in question is: " + file + "\n" );
+                + "Artifact is already in the local repository." + LS + LS + "File in question is: " + file + LS );
         }
 
         if ( classifier == null )
@@ -343,7 +343,7 @@ public class InstallFileMojo
         {
             if ( e.getCause() instanceof ModelBuildingException )
             {
-                throw new MojoExecutionException( "The artifact information is not valid:" + LINE_SEP
+                throw new MojoExecutionException( "The artifact information is not valid:" + LS
                     + e.getCause().getMessage() );
             }
             throw new MojoFailureException( "Unable to create the project.", e );
