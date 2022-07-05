@@ -32,6 +32,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.metadata.ArtifactMetadata;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.apache.maven.plugins.install.stubs.AttachedArtifactStub0;
@@ -214,7 +215,7 @@ public class InstallMojoTest
 
             fail( "Did not throw mojo execution exception" );
         }
-        catch ( MojoExecutionException e )
+        catch ( MojoFailureException e )
         {
             //expected
         }

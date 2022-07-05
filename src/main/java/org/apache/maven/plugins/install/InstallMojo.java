@@ -29,6 +29,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.eclipse.aether.installation.InstallationException;
 
 /**
  * Installs the project's main artifact, and any other artifacts attached by other plugins in the lifecycle, to the
@@ -92,6 +93,7 @@ public class InstallMojo
         return pluginContext.containsKey( INSTALL_PROCESSED_MARKER );
     }
 
+    @Override
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
@@ -145,6 +147,22 @@ public class InstallMojo
             }
         }
         return true;
+    }
+
+    private void installProject( MavenProject project ) throws MojoExecutionException, MojoFailureException
+    {
+        try
+        {
+            repositorySystem.install( session.getRepositorySession(), installer.processProject( project ) );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new MojoFailureException( e.getMessage(), e );
+        }
+        catch ( InstallationException e )
+        {
+            throw new MojoExecutionException( e.getMessage(), e );
+        }
     }
 
     public void setSkip( boolean skip )

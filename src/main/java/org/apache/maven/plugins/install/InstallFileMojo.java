@@ -32,28 +32,14 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.handler.DefaultArtifactHandler;
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
-import org.apache.maven.model.building.ModelBuildingException;
-import org.apache.maven.model.building.ModelSource;
-import org.apache.maven.model.building.StringModelSource;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.DefaultProjectBuildingRequest;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.MavenProjectHelper;
-import org.apache.maven.project.ProjectBuilder;
-import org.apache.maven.project.ProjectBuildingException;
-import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.project.artifact.ProjectArtifactMetadata;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.xml.XmlStreamReader;
@@ -61,8 +47,16 @@ import org.codehaus.plexus.util.xml.XmlStreamWriter;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.ArtifactType;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.artifact.DefaultArtifactType;
+import org.eclipse.aether.installation.InstallRequest;
+import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.LocalRepositoryManager;
+import org.eclipse.aether.util.artifact.SubArtifact;
 
 /**
  * Installs a file in the local repository.
@@ -161,21 +155,7 @@ public class InstallFileMojo
     @Parameter( property = "localRepositoryPath" )
     private File localRepositoryPath;
 
-    /**
-     * Used for attaching the artifacts to install to the project.
-     */
-    @Component
-    private MavenProjectHelper projectHelper;
-
-    /**
-     * Used for creating the project to which the artifacts to install will be attached.
-     */
-    @Component
-    private ProjectBuilder projectBuilder;
-
-    /**
-     * @see org.apache.maven.plugin.Mojo#execute()
-     */
+    @Override
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
@@ -186,6 +166,7 @@ public class InstallFileMojo
             throw new MojoFailureException( message );
         }
 
+        RepositorySystemSession repositorySystemSession = session.getRepositorySession();
         if ( localRepositoryPath != null )
         {
             // "clone" repository session and replace localRepository
@@ -202,8 +183,7 @@ public class InstallFileMojo
             LocalRepositoryManager localRepositoryManager = repositorySystem.newLocalRepositoryManager( newSession,
                     new LocalRepository( localRepositoryPath, contentType ) );
             newSession.setLocalRepositoryManager( localRepositoryManager );
-            this.session = new MavenSession(
-                    session.getContainer(), newSession, session.getRequest(), session.getResult() );
+            repositorySystemSession = newSession;
         }
 
         File temporaryPom = null;
@@ -218,65 +198,54 @@ public class InstallFileMojo
             pomFile = temporaryPom;
         }
 
-        MavenProject project = createMavenProject();
-        
-        // We need to set a new ArtifactHandler otherwise 
-        // the extension will be set to the packaging type
-        // which is sometimes wrong.
-        DefaultArtifactHandler ah = new DefaultArtifactHandler( packaging );
-        ah.setExtension( FileUtils.getExtension( file.getName() ) );
+        if ( groupId == null || artifactId == null || version == null || packaging == null )
+        {
+            throw new MojoExecutionException( "The artifact information is incomplete: 'groupId', 'artifactId', "
+                    + "'version' and 'packaging' are required." );
+        }
 
-        project.getArtifact().setArtifactHandler( ah );
-        Artifact artifact = project.getArtifact();
+        InstallRequest installRequest = new InstallRequest();
 
-        if ( file.equals( getLocalRepoFile( artifact ) ) )
+        ArtifactType artifactType = session.getRepositorySession().getArtifactTypeRegistry().get( packaging );
+        if ( artifactType == null )
+        {
+            artifactType = new DefaultArtifactType(
+                    packaging, FileUtils.getExtension( file.getName() ), classifier, "none"
+            );
+        }
+
+        Artifact mainArtifact = new DefaultArtifact(
+                groupId,
+                artifactId,
+                classifier,
+                null,
+                version,
+                artifactType
+        ).setFile( file );
+        installRequest.addArtifact( mainArtifact );
+
+        File artifactLocalFile = installer.getLocalRepositoryFile( session.getRepositorySession(), mainArtifact );
+        File pomLocalFile = installer.getPomLocalRepositoryFile( session.getRepositorySession(), mainArtifact );
+
+        if ( file.equals( artifactLocalFile ) )
         {
             throw new MojoFailureException( "Cannot install artifact. "
                 + "Artifact is already in the local repository." + LS + LS + "File in question is: " + file + LS );
-        }
-
-        if ( classifier == null )
-        {
-            artifact.setFile( file );
-            if ( "pom".equals( packaging ) )
-            {
-                project.setFile( file );
-            }
-        }
-        else
-        {
-            projectHelper.attachArtifact( project, packaging, classifier, file );
         }
 
         if ( !"pom".equals( packaging ) )
         {
             if ( pomFile != null )
             {
-                if ( classifier == null )
-                {
-                    artifact.addMetadata( new ProjectArtifactMetadata( artifact, pomFile ) );
-                }
-                else
-                {
-                    project.setFile( pomFile );
-                }
+                installRequest.addArtifact( new SubArtifact( mainArtifact, "", "pom", pomFile ) );
             }
             else
             {
-                temporaryPom = generatePomFile();
-                ProjectArtifactMetadata pomMetadata = new ProjectArtifactMetadata( artifact, temporaryPom );
-                if ( Boolean.TRUE.equals( generatePom )
-                    || ( generatePom == null && !getLocalRepoFile( pomMetadata ).exists() ) )
+                if ( Boolean.TRUE.equals( generatePom ) || ( generatePom == null && !pomLocalFile.exists() ) )
                 {
+                    temporaryPom = generatePomFile();
                     getLog().debug( "Installing generated POM" );
-                    if ( classifier == null )
-                    {
-                        artifact.addMetadata( pomMetadata );
-                    }
-                    else
-                    {
-                        project.setFile( temporaryPom );
-                    }
+                    installRequest.addArtifact( new SubArtifact( mainArtifact, "", "pom", temporaryPom ) );
                 }
                 else if ( generatePom == null )
                 {
@@ -287,19 +256,19 @@ public class InstallFileMojo
 
         if ( sources != null )
         {
-            projectHelper.attachArtifact( project, "jar", "sources", sources );
+            installRequest.addArtifact( new SubArtifact( mainArtifact, "sources", "jar", sources ) );
         }
 
         if ( javadoc != null )
         {
-            projectHelper.attachArtifact( project, "jar", "javadoc", javadoc );
+            installRequest.addArtifact( new SubArtifact( mainArtifact, "javadoc", "jar", javadoc ) );
         }
 
         try
         {
-            installProject( project );
+            repositorySystem.install( repositorySystemSession, installRequest );
         }
-        catch ( Exception e )
+        catch ( InstallationException e )
         {
             throw new MojoExecutionException( e.getMessage(), e );
         }
@@ -310,43 +279,6 @@ public class InstallFileMojo
                 // noinspection ResultOfMethodCallIgnored
                 temporaryPom.delete();
             }
-        }
-    }
-
-    /**
-     * Creates a Maven project in-memory from the user-supplied groupId, artifactId and version. When a classifier is
-     * supplied, the packaging must be POM because the project with only have attachments. This project serves as basis
-     * to attach the artifacts to install to.
-     * 
-     * @return The created Maven project, never <code>null</code>.
-     * @throws MojoExecutionException When the model of the project could not be built.
-     * @throws MojoFailureException When building the project failed.
-     */
-    private MavenProject createMavenProject()
-        throws MojoExecutionException, MojoFailureException
-    {
-        if ( groupId == null || artifactId == null || version == null || packaging == null )
-        {
-            throw new MojoExecutionException( "The artifact information is incomplete: 'groupId', 'artifactId', "
-                + "'version' and 'packaging' are required." );
-        }
-        ModelSource modelSource = new StringModelSource( "<project><modelVersion>4.0.0</modelVersion><groupId>"
-            + groupId + "</groupId><artifactId>" + artifactId + "</artifactId><version>" + version
-            + "</version><packaging>" + ( classifier == null ? packaging : "pom" ) + "</packaging></project>" );
-        ProjectBuildingRequest pbr = new DefaultProjectBuildingRequest( session.getProjectBuildingRequest() );
-        pbr.setProcessPlugins( false );
-        try
-        {
-            return projectBuilder.build( modelSource, pbr ).getProject();
-        }
-        catch ( ProjectBuildingException e )
-        {
-            if ( e.getCause() instanceof ModelBuildingException )
-            {
-                throw new MojoExecutionException( "The artifact information is not valid:" + LS
-                    + e.getCause().getMessage() );
-            }
-            throw new MojoFailureException( "Unable to create the project.", e );
         }
     }
 
