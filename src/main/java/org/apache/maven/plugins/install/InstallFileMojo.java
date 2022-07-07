@@ -42,6 +42,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.IOUtil;
+import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.xml.XmlStreamReader;
 import org.codehaus.plexus.util.xml.XmlStreamWriter;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
@@ -51,7 +52,6 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.ArtifactType;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.artifact.DefaultArtifactType;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.LocalRepository;
@@ -184,6 +184,7 @@ public class InstallFileMojo
                     new LocalRepository( localRepositoryPath, contentType ) );
             newSession.setLocalRepositoryManager( localRepositoryManager );
             repositorySystemSession = newSession;
+            getLog().debug( "localRepoPath: " + localRepositoryManager.getRepository().getBasedir() );
         }
 
         File temporaryPom = null;
@@ -204,23 +205,32 @@ public class InstallFileMojo
                     + "'version' and 'packaging' are required." );
         }
 
-        InstallRequest installRequest = new InstallRequest();
-
-        ArtifactType artifactType = session.getRepositorySession().getArtifactTypeRegistry().get( packaging );
-        if ( artifactType == null )
+        if ( !installer.isValidId( groupId )
+                || !installer.isValidId( artifactId )
+                || !installer.isValidVersion( version ) )
         {
-            artifactType = new DefaultArtifactType(
-                    packaging, FileUtils.getExtension( file.getName() ), classifier, "none"
-            );
+            throw new MojoExecutionException( "The artifact information is not valid: uses invalid characters." );
         }
 
+        InstallRequest installRequest = new InstallRequest();
+
+        boolean isFilePom = classifier == null && "pom".equals( packaging );
+        if ( !isFilePom )
+        {
+            ArtifactType artifactType = repositorySystemSession.getArtifactTypeRegistry().get( packaging );
+            if ( artifactType != null
+                    && StringUtils.isEmpty( classifier )
+                    && !StringUtils.isEmpty( artifactType.getClassifier() ) )
+            {
+                classifier = artifactType.getClassifier();
+            }
+        }
         Artifact mainArtifact = new DefaultArtifact(
                 groupId,
                 artifactId,
                 classifier,
-                null,
-                version,
-                artifactType
+                isFilePom ? "pom" : FileUtils.getExtension( file.getName() ),
+                version
         ).setFile( file );
         installRequest.addArtifact( mainArtifact );
 

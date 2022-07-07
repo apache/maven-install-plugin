@@ -140,4 +140,46 @@ public class Installer
 
         return request;
     }
+
+    public boolean isValidId( String id )
+    {
+        if ( id == null )
+        {
+            return false;
+        }
+        for ( int i = 0; i < id.length(); i++ )
+        {
+            char c = id.charAt( i );
+            if ( !isValidIdCharacter( c ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+    private boolean isValidIdCharacter( char c )
+    {
+        return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.';
+    }
+
+    private static final String ILLEGAL_VERSION_CHARS = "\\/:\"<>|?*[](){},";
+
+    public boolean isValidVersion( String version )
+    {
+        if ( version == null )
+        {
+            return false;
+        }
+        for ( int i = version.length() - 1; i >= 0; i-- )
+        {
+            if ( ILLEGAL_VERSION_CHARS.indexOf( version.charAt( i ) ) >= 0 )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
 }

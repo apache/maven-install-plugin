@@ -31,11 +31,9 @@ import org.apache.maven.project.ProjectBuildingRequest;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.xml.XmlStreamReader;
 import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.artifact.DefaultArtifactType;
 import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
-import org.eclipse.aether.util.artifact.DefaultArtifactTypeRegistry;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -293,9 +291,6 @@ public class InstallFileMojoTest
                         repositorySession, new LocalRepository( LOCAL_REPO )
                 )
         );
-        DefaultArtifactTypeRegistry stereotypes = new DefaultArtifactTypeRegistry();
-        stereotypes.add( new DefaultArtifactType( "pom" ) );
-        repositorySession.setArtifactTypeRegistry( stereotypes );
         ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
         buildingRequest.setRepositorySession( repositorySession );
         when( session.getProjectBuildingRequest() ).thenReturn( buildingRequest );
