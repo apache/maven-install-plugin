@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.metadata.ArtifactMetadata;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
@@ -72,7 +73,7 @@ public class InstallMojoTest
     {
         File testPom = new File( getBasedir(), "target/test-classes/unit/basic-install-test/plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
     }
@@ -82,7 +83,7 @@ public class InstallMojoTest
     {
         File testPom = new File( getBasedir(), "target/test-classes/unit/basic-install-test/plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 
@@ -119,7 +120,7 @@ public class InstallMojoTest
         File testPom = new File( getBasedir(), "target/test-classes/unit/basic-install-test-with-attached-artifacts/"
             + "plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 
@@ -160,7 +161,7 @@ public class InstallMojoTest
     {
         File testPom = new File( getBasedir(), "target/test-classes/unit/configured-install-test/plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 
@@ -191,7 +192,7 @@ public class InstallMojoTest
     {
         File testPom = new File( getBasedir(), "target/test-classes/unit/basic-install-test/plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 
@@ -229,7 +230,7 @@ public class InstallMojoTest
         File testPom = new File( getBasedir(),
                                  "target/test-classes/unit/basic-install-test-packaging-pom/" + "plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 
@@ -264,7 +265,7 @@ public class InstallMojoTest
     {
         File testPom = new File( getBasedir(), "target/test-classes/unit/basic-install-checksum/plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 

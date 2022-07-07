@@ -32,12 +32,15 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
+import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.codehaus.plexus.util.FileUtils;
@@ -48,6 +51,7 @@ import org.codehaus.plexus.util.xml.XmlStreamWriter;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.ArtifactType;
@@ -65,9 +69,15 @@ import org.eclipse.aether.util.artifact.SubArtifact;
  */
 @Mojo( name = "install-file", requiresProject = false, aggregator = true, threadSafe = true )
 public class InstallFileMojo
-    extends AbstractInstallMojo
+        extends AbstractMojo
 {
     private static final String LS = System.getProperty( "line.separator" );
+
+    @Component
+    private RepositorySystem repositorySystem;
+
+    @Parameter( defaultValue = "${session}", required = true, readonly = true )
+    private MavenSession session;
 
     /**
      * GroupId of the artifact to be installed. Retrieved from POM file if one is specified or extracted from
@@ -501,6 +511,69 @@ public class InstallFileMojo
         {
             IOUtil.close( writer );
         }
+    }
+
+    /**
+     * Gets the path of the specified artifact within the local repository. Note that the returned path need not exist
+     * (yet).
+     */
+    private File getLocalRepositoryFile( RepositorySystemSession session, Artifact artifact )
+    {
+        String path = session.getLocalRepositoryManager().getPathForLocalArtifact( artifact );
+        return new File( session.getLocalRepository().getBasedir(), path );
+    }
+
+    /**
+     * Gets the path of the specified artifact POM within the local repository. Note that the returned path need
+     * not exist (yet).
+     */
+    private File getPomLocalRepositoryFile( RepositorySystemSession session, Artifact artifact )
+    {
+        SubArtifact pomArtifact = new SubArtifact( artifact, "", "pom" );
+        String path = session.getLocalRepositoryManager().getPathForLocalArtifact( pomArtifact );
+        return new File( session.getLocalRepository().getBasedir(), path );
+    }
+
+    /**
+     * Returns {@code true} if passed in string is "valid Maven ID" (groupId or artifactId).
+     */
+    private boolean isValidId( String id )
+    {
+        if ( id == null )
+        {
+            return false;
+        }
+        for ( int i = 0; i < id.length(); i++ )
+        {
+            char c = id.charAt( i );
+            if ( !( c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+                    || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.' ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static final String ILLEGAL_VERSION_CHARS = "\\/:\"<>|?*[](){},";
+
+    /**
+     * Returns {@code true} if passed in string is "valid Maven (simple. non range, expression, etc) version".
+     */
+    private boolean isValidVersion( String version )
+    {
+        if ( version == null )
+        {
+            return false;
+        }
+        for ( int i = version.length() - 1; i >= 0; i-- )
+        {
+            if ( ILLEGAL_VERSION_CHARS.indexOf( version.charAt( i ) ) >= 0 )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
 }
