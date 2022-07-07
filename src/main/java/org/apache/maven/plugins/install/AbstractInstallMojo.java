@@ -54,9 +54,6 @@ public abstract class AbstractInstallMojo
     /**
      * Gets the path of the specified artifact within the local repository. Note that the returned path need not exist
      * (yet).
-     *
-     * @param artifact The artifact whose local repo path should be determined, must not be <code>null</code>.
-     * @return The absolute path to the artifact when installed, never <code>null</code>.
      */
     protected File getLocalRepositoryFile( RepositorySystemSession session, Artifact artifact )
     {
@@ -67,9 +64,6 @@ public abstract class AbstractInstallMojo
     /**
      * Gets the path of the specified artifact POM within the local repository. Note that the returned path need
      * not exist (yet).
-     *
-     * @param artifact The artifact whose POM local repo path should be determined, must not be <code>null</code>.
-     * @return The absolute path to the artifact POM when installed, never <code>null</code>.
      */
     protected File getPomLocalRepositoryFile( RepositorySystemSession session, Artifact artifact )
     {
@@ -148,6 +142,9 @@ public abstract class AbstractInstallMojo
         return request;
     }
 
+    /**
+     * Returns {@code true} if passed in string is "valid Maven ID" (groupId or artifactId).
+     */
     protected boolean isValidId( String id )
     {
         if ( id == null )
@@ -172,6 +169,9 @@ public abstract class AbstractInstallMojo
 
     private static final String ILLEGAL_VERSION_CHARS = "\\/:\"<>|?*[](){},";
 
+    /**
+     * Returns {@code true} if passed in string is "valid Maven (simple. non range, expression, etc) version".
+     */
     protected boolean isValidVersion( String version )
     {
         if ( version == null )
