@@ -153,7 +153,7 @@ public class InstallMojo
     {
         try
         {
-            repositorySystem.install( session.getRepositorySession(), installer.processProject( project ) );
+            repositorySystem.install( session.getRepositorySession(), processProject( project ) );
         }
         catch ( IllegalArgumentException e )
         {

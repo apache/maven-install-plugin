@@ -205,9 +205,9 @@ public class InstallFileMojo
                     + "'version' and 'packaging' are required." );
         }
 
-        if ( !installer.isValidId( groupId )
-                || !installer.isValidId( artifactId )
-                || !installer.isValidVersion( version ) )
+        if ( !isValidId( groupId )
+                || !isValidId( artifactId )
+                || !isValidVersion( version ) )
         {
             throw new MojoExecutionException( "The artifact information is not valid: uses invalid characters." );
         }
@@ -234,8 +234,8 @@ public class InstallFileMojo
         ).setFile( file );
         installRequest.addArtifact( mainArtifact );
 
-        File artifactLocalFile = installer.getLocalRepositoryFile( session.getRepositorySession(), mainArtifact );
-        File pomLocalFile = installer.getPomLocalRepositoryFile( session.getRepositorySession(), mainArtifact );
+        File artifactLocalFile = getLocalRepositoryFile( session.getRepositorySession(), mainArtifact );
+        File pomLocalFile = getPomLocalRepositoryFile( session.getRepositorySession(), mainArtifact );
 
         if ( file.equals( artifactLocalFile ) )
         {
