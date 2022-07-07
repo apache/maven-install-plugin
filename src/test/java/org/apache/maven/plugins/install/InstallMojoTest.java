@@ -331,12 +331,11 @@ public class InstallMojoTest
         setVariableValueToObject( mojo, "pluginDescriptor", new PluginDescriptor() );
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
         setVariableValueToObject( mojo, "session", createMavenSession() );
+        setVariableValueToObject( mojo, "skip", Boolean.TRUE );
 
         artifact = (InstallArtifactStub) project.getArtifact();
 
         artifact.setFile( file );
-
-        mojo.setSkip( true );
 
         mojo.execute();
 

@@ -129,9 +129,6 @@ public class InstallMojo
         }
     }
 
-    /**
-     * Visible for testing.
-     */
     private String getProjectReferenceId( MavenProject mavenProject )
     {
         return mavenProject.getGroupId() + ":" + mavenProject.getArtifactId() + ":" + mavenProject.getVersion();
@@ -163,11 +160,6 @@ public class InstallMojo
         {
             throw new MojoExecutionException( e.getMessage(), e );
         }
-    }
-
-    public void setSkip( boolean skip )
-    {
-        this.skip = skip;
     }
 
 }
