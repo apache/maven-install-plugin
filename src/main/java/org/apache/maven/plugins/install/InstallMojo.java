@@ -128,7 +128,8 @@ public class InstallMojo
             }
             else
             {
-                getLog().info( "Deferring install for " + getProjectReferenceId( project ) + " at end" );
+                getLog().info( "Deferring install for " + project.getGroupId()
+                        + ":" + project.getArtifactId() + ":" + project.getVersion() + " at end" );
                 putState( State.TO_BE_INSTALLED );
             }
         }
@@ -144,11 +145,6 @@ public class InstallMojo
                 }
             }
         }
-    }
-
-    private String getProjectReferenceId( MavenProject mavenProject )
-    {
-        return mavenProject.getGroupId() + ":" + mavenProject.getArtifactId() + ":" + mavenProject.getVersion();
     }
 
     private boolean allProjectsMarked()

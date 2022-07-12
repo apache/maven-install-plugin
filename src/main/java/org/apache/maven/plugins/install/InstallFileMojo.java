@@ -239,7 +239,7 @@ public class InstallFileMojo
                 groupId,
                 artifactId,
                 classifier,
-                isFilePom ? "pom" : FileUtils.getExtension( file.getName() ),
+                isFilePom ? "pom" : getExtension( file ),
                 version
         ).setFile( file );
         installRequest.addArtifact( mainArtifact );
@@ -532,6 +532,24 @@ public class InstallFileMojo
         SubArtifact pomArtifact = new SubArtifact( artifact, "", "pom" );
         String path = session.getLocalRepositoryManager().getPathForLocalArtifact( pomArtifact );
         return new File( session.getLocalRepository().getBasedir(), path );
+    }
+
+    // these below should be shared (duplicated in m-install-p, m-deploy-p)
+
+    /**
+     * Specialization of {@link FileUtils#getExtension(String)} that honors various {@code tar.xxx} combinations.
+     */
+    private String getExtension( final File file )
+    {
+        String filename = file.getName();
+        if ( filename.contains( ".tar." ) )
+        {
+            return "tar." + FileUtils.getExtension( filename );
+        }
+        else
+        {
+            return FileUtils.getExtension( filename );
+        }
     }
 
     /**
