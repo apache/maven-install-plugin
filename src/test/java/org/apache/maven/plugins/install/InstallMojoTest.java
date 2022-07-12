@@ -31,7 +31,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.metadata.ArtifactMetadata;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.apache.maven.plugins.install.stubs.AttachedArtifactStub0;
@@ -39,9 +41,9 @@ import org.apache.maven.plugins.install.stubs.InstallArtifactStub;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.transfer.repository.RepositoryManager;
-import org.apache.maven.shared.utils.io.FileUtils;
+import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
@@ -71,7 +73,7 @@ public class InstallMojoTest
     {
         File testPom = new File( getBasedir(), "target/test-classes/unit/basic-install-test/plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
     }
@@ -81,7 +83,7 @@ public class InstallMojoTest
     {
         File testPom = new File( getBasedir(), "target/test-classes/unit/basic-install-test/plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 
@@ -118,7 +120,7 @@ public class InstallMojoTest
         File testPom = new File( getBasedir(), "target/test-classes/unit/basic-install-test-with-attached-artifacts/"
             + "plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 
@@ -159,7 +161,7 @@ public class InstallMojoTest
     {
         File testPom = new File( getBasedir(), "target/test-classes/unit/configured-install-test/plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 
@@ -190,7 +192,7 @@ public class InstallMojoTest
     {
         File testPom = new File( getBasedir(), "target/test-classes/unit/basic-install-test/plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 
@@ -214,7 +216,7 @@ public class InstallMojoTest
 
             fail( "Did not throw mojo execution exception" );
         }
-        catch ( MojoExecutionException e )
+        catch ( MojoFailureException e )
         {
             //expected
         }
@@ -228,7 +230,7 @@ public class InstallMojoTest
         File testPom = new File( getBasedir(),
                                  "target/test-classes/unit/basic-install-test-packaging-pom/" + "plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 
@@ -263,7 +265,7 @@ public class InstallMojoTest
     {
         File testPom = new File( getBasedir(), "target/test-classes/unit/basic-install-checksum/plugin-config.xml" );
 
-        AbstractInstallMojo mojo = (AbstractInstallMojo) lookupMojo( "install", testPom );
+        AbstractMojo mojo = (AbstractMojo) lookupMojo( "install", testPom );
 
         assertNotNull( mojo );
 
@@ -294,12 +296,7 @@ public class InstallMojoTest
             }
         }
 
-        RepositoryManager repoManager = (RepositoryManager) getVariableValueFromObject( mojo, "repositoryManager" );
-        
-        ProjectBuildingRequest pbr = mavenSession.getProjectBuildingRequest();
-
-        File pom = new File( repoManager.getLocalRepositoryBasedir( pbr ),
-                             repoManager.getPathForLocalMetadata( pbr, metadata ) );
+        File pom = new File( new File( LOCAL_REPO ), mavenSession.getRepositorySession().getLocalRepositoryManager().getPathForLocalArtifact( new DefaultArtifact( artifact.getGroupId(), artifact.getArtifactId(), "pom", artifact.getVersion() ) ) );
 
         assertTrue( pom.exists() );
 
@@ -335,12 +332,11 @@ public class InstallMojoTest
         setVariableValueToObject( mojo, "pluginDescriptor", new PluginDescriptor() );
         setVariableValueToObject( mojo, "reactorProjects", Collections.singletonList( project ) );
         setVariableValueToObject( mojo, "session", createMavenSession() );
+        setVariableValueToObject( mojo, "skip", Boolean.TRUE );
 
         artifact = (InstallArtifactStub) project.getArtifact();
 
         artifact.setFile( file );
-
-        mojo.setSkip( true );
 
         mojo.execute();
 
@@ -374,6 +370,7 @@ public class InstallMojoTest
         ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
         buildingRequest.setRepositorySession( repositorySession );
         when( session.getProjectBuildingRequest() ).thenReturn( buildingRequest );
+        when( session.getRepositorySession() ).thenReturn( repositorySession );
         when( session.getPluginContext(any(PluginDescriptor.class), any(MavenProject.class)))
             .thenReturn( new ConcurrentHashMap<String, Object>() );
         return session;

@@ -19,10 +19,13 @@ package org.apache.maven.plugins.install;
  * under the License.
  */
 
-import java.io.IOException;
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.maven.RepositoryUtils;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
@@ -31,10 +34,13 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.shared.transfer.artifact.install.ArtifactInstallerException;
-import org.apache.maven.shared.transfer.project.NoFileAssignedException;
-import org.apache.maven.shared.transfer.project.install.ProjectInstaller;
-import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
+import org.apache.maven.project.artifact.ProjectArtifact;
+import org.apache.maven.project.artifact.ProjectArtifactMetadata;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.installation.InstallRequest;
+import org.eclipse.aether.installation.InstallationException;
+import org.eclipse.aether.util.artifact.SubArtifact;
 
 /**
  * Installs the project's main artifact, and any other artifacts attached by other plugins in the lifecycle, to the
@@ -44,8 +50,14 @@ import org.apache.maven.shared.transfer.project.install.ProjectInstallerRequest;
  */
 @Mojo( name = "install", defaultPhase = LifecyclePhase.INSTALL, threadSafe = true )
 public class InstallMojo
-    extends AbstractInstallMojo
+        extends AbstractMojo
 {
+    @Component
+    private RepositorySystem repositorySystem;
+
+    @Parameter( defaultValue = "${session}", required = true, readonly = true )
+    private MavenSession session;
+
     @Parameter( defaultValue = "${project}", readonly = true, required = true )
     private MavenProject project;
 
@@ -74,9 +86,6 @@ public class InstallMojo
     @Parameter( property = "maven.install.skip", defaultValue = "false" )
     private boolean skip;
 
-    @Component
-    private ProjectInstaller installer;
-
     private enum State
     {
         SKIPPED, INSTALLED, TO_BE_INSTALLED
@@ -101,6 +110,7 @@ public class InstallMojo
         return pluginContext.containsKey( INSTALL_PROCESSED_MARKER );
     }
 
+    @Override
     public void execute()
         throws MojoExecutionException, MojoFailureException
     {
@@ -118,7 +128,8 @@ public class InstallMojo
             }
             else
             {
-                getLog().info( "Deferring install for " + getProjectReferenceId( project ) + " at end" );
+                getLog().info( "Deferring install for " + project.getGroupId()
+                        + ":" + project.getArtifactId() + ":" + project.getVersion() + " at end" );
                 putState( State.TO_BE_INSTALLED );
             }
         }
@@ -136,11 +147,6 @@ public class InstallMojo
         }
     }
 
-    private String getProjectReferenceId( MavenProject mavenProject )
-    {
-        return mavenProject.getGroupId() + ":" + mavenProject.getArtifactId() + ":" + mavenProject.getVersion();
-    }
-
     private boolean allProjectsMarked()
     {
         for ( MavenProject reactorProject : reactorProjects )
@@ -153,31 +159,90 @@ public class InstallMojo
         return true;
     }
 
-    private void installProject( MavenProject pir )
-        throws MojoFailureException, MojoExecutionException
+    private void installProject( MavenProject project ) throws MojoExecutionException, MojoFailureException
     {
         try
         {
-            installer.install( session.getProjectBuildingRequest(), new ProjectInstallerRequest().setProject( pir ) );
+            repositorySystem.install( session.getRepositorySession(), processProject( project ) );
         }
-        catch ( IOException e )
+        catch ( IllegalArgumentException e )
         {
-            throw new MojoFailureException( "IOException", e );
+            throw new MojoFailureException( e.getMessage(), e );
         }
-        catch ( ArtifactInstallerException e )
+        catch ( InstallationException e )
         {
-            throw new MojoExecutionException( "ArtifactInstallerException", e );
+            throw new MojoExecutionException( e.getMessage(), e );
         }
-        catch ( NoFileAssignedException e )
-        {
-            throw new MojoExecutionException( "NoFileAssignedException", e );
-        }
-
     }
 
-    public void setSkip( boolean skip )
+    /**
+     * Processes passed in {@link MavenProject} and produces {@link InstallRequest} out of it.
+     *
+     * @throws IllegalArgumentException if project is badly set up.
+     */
+    private InstallRequest processProject( MavenProject project )
     {
-        this.skip = skip;
+        InstallRequest request = new InstallRequest();
+        org.apache.maven.artifact.Artifact mavenMainArtifact = project.getArtifact();
+        String packaging = project.getPackaging();
+        File pomFile = project.getFile();
+        boolean isPomArtifact = "pom".equals( packaging );
+        boolean pomArtifactAttached = false;
+
+        if ( pomFile != null )
+        {
+            request.addArtifact( RepositoryUtils.toArtifact( new ProjectArtifact( project ) ) );
+            pomArtifactAttached = true;
+        }
+
+        if ( !isPomArtifact )
+        {
+            File file = mavenMainArtifact.getFile();
+            if ( file != null && file.isFile() )
+            {
+                Artifact mainArtifact = RepositoryUtils.toArtifact( mavenMainArtifact );
+                request.addArtifact( mainArtifact );
+
+                if ( !pomArtifactAttached )
+                {
+                    for ( Object metadata : mavenMainArtifact.getMetadataList() )
+                    {
+                        if ( metadata instanceof ProjectArtifactMetadata )
+                        {
+                            request.addArtifact( new SubArtifact(
+                                    mainArtifact,
+                                    "",
+                                    "pom"
+                            ).setFile( ( (ProjectArtifactMetadata) metadata ).getFile() ) );
+                            pomArtifactAttached = true;
+                        }
+                    }
+                }
+            }
+            else if ( !project.getAttachedArtifacts().isEmpty() )
+            {
+                throw new IllegalArgumentException( "The packaging plugin for this project did not assign "
+                        + "a main file to the project but it has attachments. Change packaging to 'pom'." );
+            }
+            else
+            {
+                throw new IllegalArgumentException( "The packaging for this project did not assign "
+                        + "a file to the build artifact" );
+            }
+        }
+
+        if ( !pomArtifactAttached )
+        {
+            throw new IllegalArgumentException( "The POM could not be attached" );
+        }
+
+        for ( org.apache.maven.artifact.Artifact attached : project.getAttachedArtifacts() )
+        {
+            getLog().debug( "Attaching for install: " + attached.getId() );
+            request.addArtifact( RepositoryUtils.toArtifact( attached ) );
+        }
+
+        return request;
     }
 
 }
