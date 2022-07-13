@@ -65,7 +65,7 @@
   <properties>
     <javaVersion>7</javaVersion>
     <mavenVersion>3.2.5</mavenVersion>
-    <aetherVersion>1.0.0.v20140518</aetherVersion> <!-- Maven bound -->
+    <aetherVersion>1.1.0</aetherVersion> <!-- Maven bound -->
     <slf4jVersion>1.7.5</slf4jVersion> <!-- Maven bound -->
     <project.build.outputTimestamp>2020-04-07T21:04:00Z</project.build.outputTimestamp>
   </properties>
