@@ -206,7 +206,6 @@ public class InstallFileMojo
         else
         {
             temporaryPom = readingPomFromJarFile();
-            pomFile = temporaryPom;
         }
 
         if ( groupId == null || artifactId == null || version == null || packaging == null )

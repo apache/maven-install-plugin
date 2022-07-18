@@ -92,9 +92,6 @@ public class InstallFileMojoTest
         assignValuesForParameter( mojo );
 
         mojo.execute();
-        
-        File pomFile = (File) getVariableValueFromObject( mojo, "pomFile" );
-        org.codehaus.plexus.util.FileUtils.forceDelete( pomFile );
 
         File installedArtifact = new File( getBasedir(), LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" +
             artifactId + "-" + version + "." + packaging );
@@ -121,9 +118,6 @@ public class InstallFileMojoTest
         assertNotNull( classifier );
 
         mojo.execute();
-
-        File pomFile = (File) getVariableValueFromObject( mojo, "pomFile" );
-        org.codehaus.plexus.util.FileUtils.forceDelete( pomFile );
 
         File installedArtifact = new File( getBasedir(), LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" +
             artifactId + "-" + version + "-" + classifier + "." + packaging );
