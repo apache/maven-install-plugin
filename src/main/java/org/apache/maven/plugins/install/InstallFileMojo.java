@@ -206,6 +206,11 @@ public class InstallFileMojo
         else
         {
             temporaryPom = readingPomFromJarFile();
+            if ( !Boolean.TRUE.equals( generatePom ) )
+            {
+                pomFile = temporaryPom;
+                getLog().debug( "Using JAR embedded POM as pomFile" );
+            }
         }
 
         if ( groupId == null || artifactId == null || version == null || packaging == null )
@@ -321,7 +326,7 @@ public class InstallFileMojo
 
                 if ( pomEntry.matcher( entry.getName() ).matches() )
                 {
-                    getLog().debug( "Using " + entry.getName() + " as pomFile" );
+                    getLog().debug( "Loading " + entry.getName() );
 
                     InputStream pomInputStream = null;
                     OutputStream pomOutputStream = null;
