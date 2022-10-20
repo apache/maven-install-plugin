@@ -19,10 +19,6 @@ package org.apache.maven.plugins.install;
  * under the License.
  */
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -31,8 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.metadata.ArtifactMetadata;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Build;
+import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
@@ -48,10 +45,13 @@ import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 /**
  * @author <a href="mailto:aramirez@apache.org">Allan Ramirez</a>
  */
-
 public class InstallMojoTest
     extends AbstractMojoTestCase
 {
@@ -381,5 +381,10 @@ public class InstallMojoTest
        project.setGroupId( project.getArtifact().getGroupId() );
        project.setArtifactId( project.getArtifact().getArtifactId() );
        project.setVersion( project.getArtifact().getVersion() );
+
+       Plugin plugin = new Plugin();
+       plugin.setArtifactId( "maven-install-plugin" );
+       project.setBuild( new Build() );
+       project.getBuild().addPlugin( plugin );
     }
 }

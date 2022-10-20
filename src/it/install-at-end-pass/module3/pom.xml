@@ -20,5 +20,5 @@
     <artifactId>dae</artifactId>
     <version>1.0</version>
   </parent>
-  <artifactId>module1</artifactId>
+  <artifactId>module3</artifactId>
 </project>
