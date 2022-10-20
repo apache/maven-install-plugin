@@ -20,11 +20,14 @@ package org.apache.maven.plugins.install;
  */
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -134,9 +137,11 @@ public class InstallMojo
             }
         }
 
-        if ( allProjectsMarked() )
+        List<MavenProject> allProjectsUsingPlugin = getAllProjectsUsingPlugin();
+
+        if ( allProjectsMarked( allProjectsUsingPlugin ) )
         {
-            for ( MavenProject reactorProject : reactorProjects )
+            for ( MavenProject reactorProject : allProjectsUsingPlugin )
             {
                 State state = getState( reactorProject );
                 if ( state == State.TO_BE_INSTALLED )
@@ -147,9 +152,9 @@ public class InstallMojo
         }
     }
 
-    private boolean allProjectsMarked()
+    private boolean allProjectsMarked( List<MavenProject> allProjectsUsingPlugin )
     {
-        for ( MavenProject reactorProject : reactorProjects )
+        for ( MavenProject reactorProject : allProjectsUsingPlugin )
         {
             if ( !hasState( reactorProject ) )
             {
@@ -157,6 +162,36 @@ public class InstallMojo
             }
         }
         return true;
+    }
+
+    private List<MavenProject> getAllProjectsUsingPlugin()
+    {
+        ArrayList<MavenProject> result = new ArrayList<>();
+        for ( MavenProject reactorProject : reactorProjects )
+        {
+            if ( hasExecution( reactorProject.getPlugin( "org.apache.maven.plugins:maven-install-plugin" ) ) )
+            {
+                result.add( reactorProject );
+            }
+        }
+        return result;
+    }
+
+    private boolean hasExecution( Plugin plugin )
+    {
+        if ( plugin == null )
+        {
+            return false;
+        }
+
+        for ( PluginExecution execution : plugin.getExecutions() )
+        {
+            if ( !execution.getGoals().isEmpty() && !"none".equalsIgnoreCase( execution.getPhase() ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void installProject( MavenProject project ) throws MojoExecutionException, MojoFailureException

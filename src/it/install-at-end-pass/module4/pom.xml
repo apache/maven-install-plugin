@@ -20,5 +20,19 @@
     <artifactId>dae</artifactId>
     <version>1.0</version>
   </parent>
-  <artifactId>module1</artifactId>
+  <artifactId>module4</artifactId>
+
+  <!-- packaging without install plugin -->
+  <packaging>without-install</packaging>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.its.install.mock</groupId>
+        <artifactId>mock-phase-maven-plugin</artifactId>
+        <version>1.0</version>
+        <extensions>true</extensions>
+      </plugin>
+    </plugins>
+  </build>
 </project>
