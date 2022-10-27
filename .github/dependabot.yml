@@ -25,17 +25,3 @@ updates:
   ignore:
     # Ignore Maven Core updates
     - dependency-name: "org.apache.maven:*"
-    # ignore Java 8+ dependencies
-    - dependency-name: org.mockito:mockito-core
-      versions:
-        - ">= 3.0"
-    - dependency-name: org.apache.commons:commons-lang3
-      versions:
-        - ">= 3.9"
-    - dependency-name: commons-io:commons-io
-      versions:
-        - ">= 2.7"
-    # Ignore Maven 3.2.1+
-    - dependency-name: org.apache.maven.plugin-testing:maven-plugin-testing-tools
-      versions:
-        - ">=3.2.0"
