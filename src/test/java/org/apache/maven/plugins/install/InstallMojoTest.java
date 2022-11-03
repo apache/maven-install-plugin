@@ -25,12 +25,11 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.metadata.ArtifactMetadata;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Build;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.apache.maven.plugins.install.stubs.AttachedArtifactStub0;
@@ -216,7 +215,7 @@ public class InstallMojoTest
 
             fail( "Did not throw mojo execution exception" );
         }
-        catch ( MojoFailureException e )
+        catch ( MojoExecutionException e )
         {
             //expected
         }
@@ -285,16 +284,6 @@ public class InstallMojoTest
         artifact.setFile( file );
 
         mojo.execute();
-
-        ArtifactMetadata metadata = null;
-        for ( Object o : artifact.getMetadataList() )
-        {
-            metadata = (ArtifactMetadata) o;
-            if ( metadata.getRemoteFilename().endsWith( "pom" ) )
-            {
-                break;
-            }
-        }
 
         File pom = new File( new File( LOCAL_REPO ), mavenSession.getRepositorySession().getLocalRepositoryManager().getPathForLocalArtifact( new DefaultArtifact( artifact.getGroupId(), artifact.getArtifactId(), "pom", artifact.getVersion() ) ) );
 
