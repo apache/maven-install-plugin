@@ -38,12 +38,10 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.artifact.ProjectArtifact;
-import org.apache.maven.project.artifact.ProjectArtifactMetadata;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
-import org.eclipse.aether.util.artifact.SubArtifact;
 
 /**
  * Installs the project's main artifact, and any other artifacts attached by other plugins in the lifecycle, to the
@@ -238,21 +236,21 @@ public class InstallMojo
                 Artifact mainArtifact = RepositoryUtils.toArtifact( mavenMainArtifact );
                 request.addArtifact( mainArtifact );
 
-                if ( !pomArtifactAttached )
-                {
-                    for ( Object metadata : mavenMainArtifact.getMetadataList() )
-                    {
-                        if ( metadata instanceof ProjectArtifactMetadata )
-                        {
-                            request.addArtifact( new SubArtifact(
-                                    mainArtifact,
-                                    "",
-                                    "pom"
-                            ).setFile( ( (ProjectArtifactMetadata) metadata ).getFile() ) );
-                            pomArtifactAttached = true;
-                        }
-                    }
-                }
+//                if ( !pomArtifactAttached )
+//                {
+//                    for ( Object metadata : mavenMainArtifact.getMetadataList() )
+//                    {
+//                        if ( metadata instanceof ProjectArtifactMetadata )
+//                        {
+//                            request.addArtifact( new SubArtifact(
+//                                    mainArtifact,
+//                                    "",
+//                                    "pom"
+//                            ).setFile( ( (ProjectArtifactMetadata) metadata ).getFile() ) );
+//                            pomArtifactAttached = true;
+//                        }
+//                    }
+//                }
             }
             else if ( !project.getAttachedArtifacts().isEmpty() )
             {
