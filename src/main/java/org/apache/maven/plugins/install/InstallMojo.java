@@ -30,7 +30,6 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -38,17 +37,14 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.artifact.ProjectArtifact;
-import org.apache.maven.project.artifact.ProjectArtifactMetadata;
 import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
-import org.eclipse.aether.util.artifact.SubArtifact;
 
 /**
  * Installs the project's main artifact, and any other artifacts attached by other plugins in the lifecycle, to the
  * local repository.
- * 
+ *
  * @author <a href="mailto:evenisse@apache.org">Emmanuel Venisse</a>
  */
 @Mojo( name = "install", defaultPhase = LifecyclePhase.INSTALL, threadSafe = true )
@@ -74,7 +70,7 @@ public class InstallMojo
      * Whether every project should be installed during its own install-phase or at the end of the multimodule build. If
      * set to {@code true} and the build fails, none of the reactor projects is installed.
      * <strong>(experimental)</strong>
-     * 
+     *
      * @since 2.5
      */
     @Parameter( defaultValue = "false", property = "installAtEnd" )
@@ -83,7 +79,7 @@ public class InstallMojo
     /**
      * Set this to <code>true</code> to bypass artifact installation. Use this for artifacts that do not need to be
      * installed in the local repository.
-     * 
+     *
      * @since 2.4
      */
     @Parameter( property = "maven.install.skip", defaultValue = "false" )
@@ -115,7 +111,7 @@ public class InstallMojo
 
     @Override
     public void execute()
-        throws MojoExecutionException, MojoFailureException
+        throws MojoExecutionException
     {
         if ( skip )
         {
@@ -194,15 +190,11 @@ public class InstallMojo
         return false;
     }
 
-    private void installProject( MavenProject project ) throws MojoExecutionException, MojoFailureException
+    private void installProject( MavenProject project ) throws MojoExecutionException
     {
         try
         {
             repositorySystem.install( session.getRepositorySession(), processProject( project ) );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new MojoFailureException( e.getMessage(), e );
         }
         catch ( InstallationException e )
         {
@@ -213,63 +205,40 @@ public class InstallMojo
     /**
      * Processes passed in {@link MavenProject} and produces {@link InstallRequest} out of it.
      *
-     * @throws IllegalArgumentException if project is badly set up.
+     * @throws MojoExecutionException if project is badly set up.
      */
-    private InstallRequest processProject( MavenProject project )
+    private InstallRequest processProject( MavenProject project ) throws MojoExecutionException
     {
         InstallRequest request = new InstallRequest();
-        org.apache.maven.artifact.Artifact mavenMainArtifact = project.getArtifact();
-        String packaging = project.getPackaging();
-        File pomFile = project.getFile();
-        boolean isPomArtifact = "pom".equals( packaging );
-        boolean pomArtifactAttached = false;
 
-        if ( pomFile != null )
+        if ( isFile( project.getFile() ) )
         {
             request.addArtifact( RepositoryUtils.toArtifact( new ProjectArtifact( project ) ) );
-            pomArtifactAttached = true;
+        }
+        else
+        {
+            throw new MojoExecutionException( "The project POM could not be attached" );
         }
 
-        if ( !isPomArtifact )
+        if ( !"pom".equals( project.getPackaging() ) )
         {
-            File file = mavenMainArtifact.getFile();
-            if ( file != null && file.isFile() )
+            org.apache.maven.artifact.Artifact mavenMainArtifact = project.getArtifact();
+            if ( isFile( mavenMainArtifact.getFile() ) )
             {
-                Artifact mainArtifact = RepositoryUtils.toArtifact( mavenMainArtifact );
-                request.addArtifact( mainArtifact );
-
-                if ( !pomArtifactAttached )
-                {
-                    for ( Object metadata : mavenMainArtifact.getMetadataList() )
-                    {
-                        if ( metadata instanceof ProjectArtifactMetadata )
-                        {
-                            request.addArtifact( new SubArtifact(
-                                    mainArtifact,
-                                    "",
-                                    "pom"
-                            ).setFile( ( (ProjectArtifactMetadata) metadata ).getFile() ) );
-                            pomArtifactAttached = true;
-                        }
-                    }
-                }
+                request.addArtifact( RepositoryUtils.toArtifact( mavenMainArtifact ) );
             }
             else if ( !project.getAttachedArtifacts().isEmpty() )
             {
-                throw new IllegalArgumentException( "The packaging plugin for this project did not assign "
+                throw new MojoExecutionException( "The packaging plugin for this project did not assign "
                         + "a main file to the project but it has attachments. Change packaging to 'pom'." );
             }
             else
             {
-                throw new IllegalArgumentException( "The packaging for this project did not assign "
+                throw new MojoExecutionException( "The packaging for this project did not assign "
                         + "a file to the build artifact" );
             }
         }
 
-        if ( !pomArtifactAttached )
-        {
-            throw new IllegalArgumentException( "The POM could not be attached" );
-        }
 
         for ( org.apache.maven.artifact.Artifact attached : project.getAttachedArtifacts() )
         {
@@ -280,4 +249,8 @@ public class InstallMojo
         return request;
     }
 
+    private boolean isFile( File file )
+    {
+        return file != null && file.isFile();
+    }
 }
