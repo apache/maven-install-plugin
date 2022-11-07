@@ -122,7 +122,9 @@ public class InstallMojo
         {
             if ( !installAtEnd )
             {
-                installProject( project );
+                InstallRequest request = new InstallRequest();
+                processProject( project, request );
+                installProject( request );
                 putState( State.INSTALLED );
             }
             else
@@ -137,14 +139,16 @@ public class InstallMojo
 
         if ( allProjectsMarked( allProjectsUsingPlugin ) )
         {
+            InstallRequest request = new InstallRequest();
             for ( MavenProject reactorProject : allProjectsUsingPlugin )
             {
                 State state = getState( reactorProject );
                 if ( state == State.TO_BE_INSTALLED )
                 {
-                    installProject( reactorProject );
+                    processProject( reactorProject, request );
                 }
             }
+            installProject( request );
         }
     }
 
@@ -190,11 +194,11 @@ public class InstallMojo
         return false;
     }
 
-    private void installProject( MavenProject project ) throws MojoExecutionException
+    private void installProject( InstallRequest request ) throws MojoExecutionException
     {
         try
         {
-            repositorySystem.install( session.getRepositorySession(), processProject( project ) );
+            repositorySystem.install( session.getRepositorySession(), request );
         }
         catch ( InstallationException e )
         {
@@ -203,14 +207,12 @@ public class InstallMojo
     }
 
     /**
-     * Processes passed in {@link MavenProject} and produces {@link InstallRequest} out of it.
+     * Processes passed in {@link MavenProject} and prepares content of {@link InstallRequest} out of it.
      *
      * @throws MojoExecutionException if project is badly set up.
      */
-    private InstallRequest processProject( MavenProject project ) throws MojoExecutionException
+    private void processProject( MavenProject project, InstallRequest request ) throws MojoExecutionException
     {
-        InstallRequest request = new InstallRequest();
-
         if ( isFile( project.getFile() ) )
         {
             request.addArtifact( RepositoryUtils.toArtifact( new ProjectArtifact( project ) ) );
@@ -245,8 +247,6 @@ public class InstallMojo
             getLog().debug( "Attaching for install: " + attached.getId() );
             request.addArtifact( RepositoryUtils.toArtifact( attached ) );
         }
-
-        return request;
     }
 
     private boolean isFile( File file )
