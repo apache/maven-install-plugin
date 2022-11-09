@@ -23,18 +23,17 @@ under the License.
   <profiles>
     <profile>
       <id>it-repo</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
       <repositories>
         <repository>
           <id>local.central</id>
           <url>@localRepositoryUrl@</url>
           <releases>
             <enabled>true</enabled>
+            <checksumPolicy>ignore</checksumPolicy>
           </releases>
           <snapshots>
             <enabled>true</enabled>
+            <checksumPolicy>ignore</checksumPolicy>
           </snapshots>
         </repository>
       </repositories>
@@ -44,12 +43,17 @@ under the License.
           <url>@localRepositoryUrl@</url>
           <releases>
             <enabled>true</enabled>
+            <checksumPolicy>ignore</checksumPolicy>
           </releases>
           <snapshots>
             <enabled>true</enabled>
+            <checksumPolicy>ignore</checksumPolicy>
           </snapshots>
         </pluginRepository>
       </pluginRepositories>
     </profile>
   </profiles>
+  <activeProfiles>
+    <activeProfile>it-repo</activeProfile>
+  </activeProfiles>
 </settings>
