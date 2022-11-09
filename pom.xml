@@ -67,6 +67,17 @@
     <mavenVersion>3.2.5</mavenVersion>
     <aetherVersion>1.0.0.v20140518</aetherVersion> <!-- Maven bound -->
     <slf4jVersion>1.7.5</slf4jVersion> <!-- Maven bound -->
+
+    <!-- plugin versions used in IT tests -->
+    <mavenAntrunPluginVersion>3.1.0</mavenAntrunPluginVersion>
+    <mavenCompilerPluginVersion>3.10.1</mavenCompilerPluginVersion>
+    <mavenEnforcerPluginVersion>3.1.0</mavenEnforcerPluginVersion>
+    <mavenJarPluginVersion>3.3.0</mavenJarPluginVersion>
+    <mavenPluginPluginVersion>3.7.0</mavenPluginPluginVersion>
+    <mavenResourcesPluginVersion>3.3.0</mavenResourcesPluginVersion>
+    <mavenSourcePluginVersion>3.2.1</mavenSourcePluginVersion>
+    <mavenSurefirePluginVersion>3.0.0-M7</mavenSurefirePluginVersion>
+
     <project.build.outputTimestamp>2022-07-19T14:21:53Z</project.build.outputTimestamp>
   </properties>
 
