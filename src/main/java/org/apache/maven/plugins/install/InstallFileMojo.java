@@ -340,7 +340,7 @@ public class InstallFileMojo
                         {
                             base = base.substring( 0, base.lastIndexOf( '.' ) );
                         }
-                        pomFile = File.createTempFile( base, ".pom" );
+                        pomFile = Files.createTempFile( base, ".pom" ).toFile();
 
                         pomOutputStream = Files.newOutputStream( pomFile.toPath() );
 
@@ -498,7 +498,7 @@ public class InstallFileMojo
         Writer writer = null;
         try
         {
-            File pomFile = File.createTempFile( "mvninstall", ".pom" );
+            File pomFile = Files.createTempFile( "mvninstall", ".pom" ).toFile();
 
             writer = new XmlStreamWriter( pomFile );
             new MavenXpp3Writer().write( writer, model );
