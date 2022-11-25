@@ -58,12 +58,79 @@ public class InstallFileMojoTest
 
     private final String LOCAL_REPO = "target/local-repo/";
 
+    private final String SPECIFIC_LOCAL_REPO = "target/specific-local-repo/";
+
     public void setUp()
         throws Exception
     {
         super.setUp();
 
         FileUtils.deleteDirectory( new File( getBasedir() + "/" + LOCAL_REPO ) );
+        FileUtils.deleteDirectory( new File( getBasedir() + "/" + SPECIFIC_LOCAL_REPO ) );
+    }
+
+    public void testInstallFileFromLocalRepositoryToLocalRepositoryPath()
+        throws Exception
+    {
+        File localRepository =
+            new File( getBasedir(), "target/test-classes/unit/install-file-from-local-repository-test/target" );
+        
+        File testPom = new File( localRepository.getParentFile(), "plugin-config.xml" );
+
+        InstallFileMojo mojo = (InstallFileMojo) lookupMojo( "install-file", testPom );
+
+        assertNotNull( mojo );
+
+        setVariableValueToObject( mojo, "session", createMavenSession( localRepository.getAbsolutePath() ) );
+
+        File specificLocalRepositoryPath = new File( getBasedir() + "/" + SPECIFIC_LOCAL_REPO );
+
+        setVariableValueToObject( mojo, "localRepositoryPath", specificLocalRepositoryPath );
+
+        assignValuesForParameter( mojo );
+
+        mojo.execute();
+
+        String localPath = getBasedir() + "/" + SPECIFIC_LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/"
+            + artifactId + "-" + version;
+
+        File installedArtifact = new File( localPath + "." + "jar" );
+
+        assertTrue( installedArtifact.exists() );
+
+        assertEquals( FileUtils.getFiles( new File( SPECIFIC_LOCAL_REPO ), null, null ).toString(), 5,
+                      FileUtils.getFiles( new File( SPECIFIC_LOCAL_REPO ), null, null ).size() );
+    }
+
+    public void testInstallFileWithLocalRepositoryPath()
+        throws Exception
+    {
+        File testPom =
+            new File( getBasedir(), "target/test-classes/unit/install-file-with-checksum/" + "plugin-config.xml" );
+
+        InstallFileMojo mojo = (InstallFileMojo) lookupMojo( "install-file", testPom );
+
+        assertNotNull( mojo );
+
+        setVariableValueToObject( mojo, "session", createMavenSession( LOCAL_REPO ) );
+
+        File specificLocalRepositoryPath = new File( getBasedir() + "/" + SPECIFIC_LOCAL_REPO );
+
+        setVariableValueToObject( mojo, "localRepositoryPath", specificLocalRepositoryPath );
+
+        assignValuesForParameter( mojo );
+
+        mojo.execute();
+
+        String localPath = getBasedir() + "/" + SPECIFIC_LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/"
+            + artifactId + "-" + version;
+
+        File installedArtifact = new File( localPath + "." + "jar" );
+
+        assertTrue( installedArtifact.exists() );
+
+        assertEquals( FileUtils.getFiles( new File( SPECIFIC_LOCAL_REPO ), null, null ).toString(), 5,
+                      FileUtils.getFiles( new File( SPECIFIC_LOCAL_REPO ), null, null ).size() );
     }
 
     public void testInstallFileTestEnvironment()
@@ -73,7 +140,7 @@ public class InstallFileMojoTest
 
         InstallFileMojo mojo = (InstallFileMojo) lookupMojo( "install-file", testPom );
         
-        setVariableValueToObject( mojo, "session", createMavenSession() );
+        setVariableValueToObject( mojo, "session", createMavenSession( LOCAL_REPO ) );
 
         assertNotNull( mojo );
     }
@@ -87,7 +154,7 @@ public class InstallFileMojoTest
 
         assertNotNull( mojo );
         
-        setVariableValueToObject( mojo, "session", createMavenSession() );
+        setVariableValueToObject( mojo, "session", createMavenSession( LOCAL_REPO ) );
 
         assignValuesForParameter( mojo );
 
@@ -111,7 +178,7 @@ public class InstallFileMojoTest
 
         assertNotNull( mojo );
         
-        setVariableValueToObject( mojo, "session", createMavenSession() );
+        setVariableValueToObject( mojo, "session", createMavenSession( LOCAL_REPO ) );
 
         assignValuesForParameter( mojo );
 
@@ -137,7 +204,7 @@ public class InstallFileMojoTest
 
         assertNotNull( mojo );
         
-        setVariableValueToObject( mojo, "session", createMavenSession() );
+        setVariableValueToObject( mojo, "session", createMavenSession( LOCAL_REPO ) );
 
         assignValuesForParameter( mojo );
 
@@ -178,7 +245,7 @@ public class InstallFileMojoTest
 
         assertNotNull( mojo );
         
-        setVariableValueToObject( mojo, "session", createMavenSession() );
+        setVariableValueToObject( mojo, "session", createMavenSession( LOCAL_REPO ) );
 
         assignValuesForParameter( mojo );
 
@@ -211,7 +278,7 @@ public class InstallFileMojoTest
 
         assertNotNull( mojo );
         
-        setVariableValueToObject( mojo, "session", createMavenSession() );
+        setVariableValueToObject( mojo, "session", createMavenSession( LOCAL_REPO ) );
 
         assignValuesForParameter( mojo );
 
@@ -239,7 +306,7 @@ public class InstallFileMojoTest
 
         assertNotNull( mojo );
         
-        setVariableValueToObject( mojo, "session", createMavenSession() );
+        setVariableValueToObject( mojo, "session", createMavenSession( LOCAL_REPO ) );
 
         assignValuesForParameter( mojo );
 
@@ -276,13 +343,14 @@ public class InstallFileMojoTest
         return parameter.replace( '.', '/' );
     }
 
-    private MavenSession createMavenSession() throws NoLocalRepositoryManagerException
+    private MavenSession createMavenSession( String localRepositoryBaseDir )
+        throws NoLocalRepositoryManagerException
     {
         MavenSession session = mock( MavenSession.class );
         DefaultRepositorySystemSession repositorySession  = new DefaultRepositorySystemSession();
         repositorySession.setLocalRepositoryManager(
                 new EnhancedLocalRepositoryManagerFactory().newInstance(
-                        repositorySession, new LocalRepository( LOCAL_REPO )
+                        repositorySession, new LocalRepository( localRepositoryBaseDir )
                 )
         );
         ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();

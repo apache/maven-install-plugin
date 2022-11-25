@@ -248,8 +248,8 @@ public class InstallFileMojo
         ).setFile( file );
         installRequest.addArtifact( mainArtifact );
 
-        File artifactLocalFile = getLocalRepositoryFile( session.getRepositorySession(), mainArtifact );
-        File pomLocalFile = getPomLocalRepositoryFile( session.getRepositorySession(), mainArtifact );
+        File artifactLocalFile = getLocalRepositoryFile( repositorySystemSession, mainArtifact );
+        File pomLocalFile = getPomLocalRepositoryFile( repositorySystemSession, mainArtifact );
 
         if ( file.equals( artifactLocalFile ) )
         {
