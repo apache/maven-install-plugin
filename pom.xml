@@ -1,5 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
-
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   Licensed to the Apache Software Foundation (ASF) under one
   or more contributor license agreements. See the NOTICE file
@@ -18,7 +17,6 @@
   specific language governing permissions and limitations
   under the License.
 -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
@@ -26,7 +24,7 @@
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-plugins</artifactId>
     <version>38</version>
-    <relativePath />
+    <relativePath/>
   </parent>
 
   <artifactId>maven-install-plugin</artifactId>
@@ -37,6 +35,16 @@
   <description>Copies the project artifacts to the user's local repository.</description>
   <inceptionYear>2004</inceptionYear>
 
+  <contributors>
+    <!-- alphabetic order -->
+    <contributor>
+      <name>Hermann Josef Hill</name>
+    </contributor>
+    <contributor>
+      <name>Ludwig Magnusson</name>
+    </contributor>
+  </contributors>
+
   <prerequisites>
     <maven>${mavenVersion}</maven>
   </prerequisites>
@@ -44,8 +52,8 @@
   <scm>
     <connection>scm:git:https://gitbox.apache.org/repos/asf/maven-install-plugin.git</connection>
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/maven-install-plugin.git</developerConnection>
-    <url>https://github.com/apache/maven-install-plugin/tree/${project.scm.tag}</url>
     <tag>HEAD</tag>
+    <url>https://github.com/apache/maven-install-plugin/tree/${project.scm.tag}</url>
   </scm>
   <issueManagement>
     <system>jira</system>
@@ -65,8 +73,10 @@
   <properties>
     <javaVersion>8</javaVersion>
     <mavenVersion>3.2.5</mavenVersion>
-    <aetherVersion>1.0.0.v20140518</aetherVersion> <!-- Maven bound -->
-    <slf4jVersion>1.7.5</slf4jVersion> <!-- Maven bound -->
+    <aetherVersion>1.0.0.v20140518</aetherVersion>
+    <!-- Maven bound -->
+    <slf4jVersion>1.7.5</slf4jVersion>
+    <!-- Maven bound -->
 
     <!-- plugin versions used in IT tests -->
     <mavenAntrunPluginVersion>3.1.0</mavenAntrunPluginVersion>
@@ -117,7 +127,8 @@
       <groupId>org.eclipse.aether</groupId>
       <artifactId>aether-util</artifactId>
       <version>${aetherVersion}</version>
-      <scope>compile</scope> <!-- To work in Maven versions older than 3.9.0 -->
+      <scope>compile</scope>
+      <!-- To work in Maven versions older than 3.9.0 -->
     </dependency>
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
@@ -143,7 +154,8 @@
       <version>3.3.0</version>
       <scope>test</scope>
     </dependency>
-    <dependency> <!-- used by maven-plugin-testing-harness, don't give it compile scope! -->
+    <dependency>
+      <!-- used by maven-plugin-testing-harness, don't give it compile scope! -->
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-compat</artifactId>
       <version>${mavenVersion}</version>
@@ -174,16 +186,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <contributors>
-    <!-- alphabetic order -->
-    <contributor>
-      <name>Hermann Josef Hill</name>
-    </contributor>
-    <contributor>
-      <name>Ludwig Magnusson</name>
-    </contributor>
-  </contributors>
 
   <profiles>
     <profile>
