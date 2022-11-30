@@ -25,9 +25,8 @@ under the License.
           <groupId>org.apache.maven.test</groupId>
           <artifactId>maven-install-file-test</artifactId>
           <version>1.0-SNAPSHOT</version>
-          <packaging>jar</packaging>
-          <file>${basedir}/src/test/resources/unit/install-file-with-checksum/maven-test-jar.jar</file>
-          <generatePom>true</generatePom>
+          <packaging>pom</packaging>
+          <file>${basedir}/src/test/resources/unit/install-file/with-pomFile-test.xml</file>
         </configuration>
       </plugin>
     </plugins>
