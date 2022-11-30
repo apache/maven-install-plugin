@@ -18,50 +18,46 @@
  */
 package org.apache.maven.plugins.install;
 
-import java.io.File;
+import java.nio.file.Files;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.apache.maven.RepositoryUtils;
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.model.PluginExecution;
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.descriptor.PluginDescriptor;
-import org.apache.maven.plugins.annotations.Component;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.artifact.ProjectArtifact;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.installation.InstallRequest;
-import org.eclipse.aether.installation.InstallationException;
-import org.eclipse.aether.util.artifact.ArtifactIdUtils;
+import org.apache.maven.api.Artifact;
+import org.apache.maven.api.MojoExecution;
+import org.apache.maven.api.Project;
+import org.apache.maven.api.Session;
+import org.apache.maven.api.di.Inject;
+import org.apache.maven.api.model.Plugin;
+import org.apache.maven.api.plugin.Log;
+import org.apache.maven.api.plugin.MojoException;
+import org.apache.maven.api.plugin.annotations.Mojo;
+import org.apache.maven.api.plugin.annotations.Parameter;
+import org.apache.maven.api.services.ArtifactInstaller;
+import org.apache.maven.api.services.ArtifactInstallerRequest;
+import org.apache.maven.api.services.ArtifactManager;
+import org.apache.maven.api.services.ProjectManager;
 
 /**
  * Installs the project's main artifact, and any other artifacts attached by other plugins in the lifecycle, to the
  * local repository.
- *
- * @author <a href="mailto:evenisse@apache.org">Emmanuel Venisse</a>
  */
-@Mojo(name = "install", defaultPhase = LifecyclePhase.INSTALL, threadSafe = true)
-public class InstallMojo extends AbstractMojo {
-    @Component
-    private RepositorySystem repositorySystem;
+@SuppressWarnings("unused")
+@Mojo(name = "install", defaultPhase = "install")
+public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
+    @Inject
+    private Log log;
 
-    @Parameter(defaultValue = "${session}", required = true, readonly = true)
-    private MavenSession session;
+    @Inject
+    private Session session;
 
-    @Parameter(defaultValue = "${project}", readonly = true, required = true)
-    private MavenProject project;
+    @Inject
+    private Project project;
 
-    @Parameter(defaultValue = "${plugin}", required = true, readonly = true)
-    private PluginDescriptor pluginDescriptor;
+    @Inject
+    private MojoExecution mojoExecution;
 
     /**
      * Whether every project should be installed during its own install-phase or at the end of the multimodule build. If
@@ -70,7 +66,7 @@ public class InstallMojo extends AbstractMojo {
      *
      * @since 2.5
      */
-    @Parameter(defaultValue = "false", property = "installAtEnd")
+    @Parameter(property = "installAtEnd", defaultValue = "false")
     private boolean installAtEnd;
 
     /**
@@ -91,7 +87,7 @@ public class InstallMojo extends AbstractMojo {
      *
      * @since 3.1.1
      */
-    @Parameter(defaultValue = "false", property = "allowIncompleteProjects")
+    @Parameter(property = "allowIncompleteProjects", defaultValue = "false")
     private boolean allowIncompleteProjects;
 
     private enum State {
@@ -102,146 +98,143 @@ public class InstallMojo extends AbstractMojo {
 
     private static final String INSTALL_PROCESSED_MARKER = InstallMojo.class.getName() + ".processed";
 
+    public InstallMojo() {}
+
     private void putState(State state) {
-        getPluginContext().put(INSTALL_PROCESSED_MARKER, state.name());
+        session.getPluginContext(project).put(INSTALL_PROCESSED_MARKER, state.name());
     }
 
-    private State getState(MavenProject project) {
-        Map<String, Object> pluginContext = session.getPluginContext(pluginDescriptor, project);
+    private void putState(State state, ArtifactInstallerRequest request) {
+        session.getPluginContext(project).put(INSTALL_PROCESSED_MARKER, state.name());
+        session.getPluginContext(project).put(ArtifactInstallerRequest.class.getName(), request);
+    }
+
+    private State getState(Project project) {
+        Map<String, Object> pluginContext = session.getPluginContext(project);
         return State.valueOf((String) pluginContext.get(INSTALL_PROCESSED_MARKER));
     }
 
-    private boolean hasState(MavenProject project) {
-        Map<String, Object> pluginContext = session.getPluginContext(pluginDescriptor, project);
+    private boolean hasState(Project project) {
+        Map<String, Object> pluginContext = session.getPluginContext(project);
         return pluginContext.containsKey(INSTALL_PROCESSED_MARKER);
     }
 
+    private boolean usingPlugin(Project project) {
+        Plugin plugin = project.getBuild().getPluginsAsMap().get("org.apache.maven.plugins:maven-install-plugin");
+        return plugin != null
+                && plugin.getExecutions().stream()
+                        .anyMatch(e -> Objects.equals(e.getId(), mojoExecution.getExecutionId())
+                                && !"none".equals(e.getPhase()));
+    }
+
     @Override
-    public void execute() throws MojoExecutionException {
+    public void execute() {
         if (skip) {
-            getLog().info("Skipping artifact installation");
+            log.info("Skipping artifact installation");
             putState(State.SKIPPED);
         } else {
-            if (installAtEnd) {
+            if (!installAtEnd) {
+                installProject(processProject(project));
+                putState(State.INSTALLED);
+            } else {
                 getLog().info("Deferring install for " + project.getGroupId() + ":" + project.getArtifactId() + ":"
                         + project.getVersion() + " at end");
-                putState(State.TO_BE_INSTALLED);
-            } else {
-                InstallRequest request = new InstallRequest();
-                processProject(project, request);
-                installProject(request);
-                putState(State.INSTALLED);
+                putState(State.TO_BE_INSTALLED, processProject(project));
             }
         }
 
-        List<MavenProject> allProjectsUsingPlugin = getAllProjectsUsingPlugin();
-
-        if (allProjectsMarked(allProjectsUsingPlugin)) {
-            InstallRequest request = new InstallRequest();
-            for (MavenProject reactorProject : allProjectsUsingPlugin) {
+        List<Project> projectsUsingPlugin =
+                session.getProjects().stream().filter(this::usingPlugin).collect(Collectors.toList());
+        if (allProjectsMarked(projectsUsingPlugin)) {
+            for (Project reactorProject : projectsUsingPlugin) {
                 State state = getState(reactorProject);
                 if (state == State.TO_BE_INSTALLED) {
-                    processProject(reactorProject, request);
+                    Map<String, Object> pluginContext = session.getPluginContext(reactorProject);
+                    ArtifactInstallerRequest request =
+                            (ArtifactInstallerRequest) pluginContext.get(ArtifactInstallerRequest.class.getName());
+                    installProject(request);
                 }
             }
-            installProject(request);
         }
     }
 
-    private boolean allProjectsMarked(List<MavenProject> allProjectsUsingPlugin) {
-        return allProjectsUsingPlugin.stream().allMatch(this::hasState);
+    private boolean allProjectsMarked(List<Project> projectsUsingPlugin) {
+        return projectsUsingPlugin.stream().allMatch(this::hasState);
     }
 
-    private final Predicate<MavenProject> hasMavenInstallPluginExecution =
-            rp -> hasExecution(rp.getPlugin("org.apache.maven.plugins:maven-install-plugin"));
-
-    private List<MavenProject> getAllProjectsUsingPlugin() {
-        return session.getProjects().stream()
-                .filter(hasMavenInstallPluginExecution)
-                .collect(Collectors.toList());
-    }
-
-    private final Predicate<PluginExecution> havingGoals = pe -> !pe.getGoals().isEmpty();
-    private final Predicate<PluginExecution> nonePhase = pe -> !"none".equalsIgnoreCase(pe.getPhase());
-
-    private boolean hasExecution(Plugin plugin) {
-        if (plugin == null) {
-            return false;
-        }
-
-        return plugin.getExecutions().stream().filter(havingGoals).anyMatch(nonePhase);
-    }
-
-    private void installProject(InstallRequest request) throws MojoExecutionException {
+    private void installProject(ArtifactInstallerRequest request) {
         try {
-            repositorySystem.install(session.getRepositorySession(), request);
-        } catch (InstallationException e) {
-            throw new MojoExecutionException(e.getMessage(), e);
+            getArtifactInstaller().install(request);
+        } catch (MojoException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MojoException(e.getMessage(), e);
         }
     }
 
     /**
-     * Processes passed in {@link MavenProject} and prepares content of {@link InstallRequest} out of it.
+     * Processes passed in {@link Project} and produces {@link ArtifactInstallerRequest} out of it.
      *
-     * @throws MojoExecutionException if project is badly set up.
+     * @throws IllegalArgumentException if project is badly set up.
      */
-    private void processProject(MavenProject project, InstallRequest request) throws MojoExecutionException {
-        // always exists, as project exists
-        Artifact pomArtifact = RepositoryUtils.toArtifact(new ProjectArtifact(project));
-        // always exists, but at "init" is w/o file (packaging plugin assigns file to this when packaged)
-        Artifact projectArtifact = RepositoryUtils.toArtifact(project.getArtifact());
+    private ArtifactInstallerRequest processProject(Project project) {
+        ProjectManager projectManager = getProjectManager();
+        Collection<Artifact> installables = projectManager.getAllArtifacts(project);
+        Collection<Artifact> attachedArtifacts = projectManager.getAttachedArtifacts(project);
 
-        // pom project: pomArtifact and projectArtifact are SAME
-        // jar project: pomArtifact and projectArtifact are DIFFERENT
-        // incomplete project: is not pom project and projectArtifact has no file
+        getArtifactManager().setPath(project.getPomArtifact(), project.getPomPath());
 
-        // we must compare coordinates ONLY (as projectArtifact may not have file, and Artifact.equals factors it in)
-        // BUT if projectArtifact has file set, use that one
-        if (ArtifactIdUtils.equalsId(pomArtifact, projectArtifact)) {
-            if (isFile(projectArtifact.getFile())) {
-                pomArtifact = projectArtifact;
-            }
-            projectArtifact = null;
-        }
-
-        if (isFile(pomArtifact.getFile())) {
-            request.addArtifact(pomArtifact);
-        } else {
-            throw new MojoExecutionException(
-                    "The POM for project " + project.getArtifactId() + " could not be attached");
-        }
-
-        // is not packaged, is "incomplete"
-        boolean isIncomplete = projectArtifact != null && !isFile(projectArtifact.getFile());
-        if (projectArtifact != null) {
-            if (!isIncomplete) {
-                request.addArtifact(projectArtifact);
-            } else if (!project.getAttachedArtifacts().isEmpty()) {
-                if (allowIncompleteProjects) {
-                    getLog().warn("");
-                    getLog().warn("The packaging plugin for project " + project.getArtifactId() + " did not assign");
-                    getLog().warn("a main file to the project but it has attachments. Change packaging to 'pom'.");
-                    getLog().warn("");
-                    getLog().warn("Incomplete projects like this will fail in future Maven versions!");
-                    getLog().warn("");
+        for (Artifact installable : installables) {
+            if (!isValidPath(installable)) {
+                if (installable == project.getMainArtifact().orElse(null)) {
+                    if (attachedArtifacts.isEmpty()) {
+                        throw new MojoException(
+                                "The packaging for this project did not assign a file to the build artifact");
+                    } else {
+                        if (allowIncompleteProjects) {
+                            getLog().warn("");
+                            getLog().warn("The packaging plugin for this project did not assign");
+                            getLog().warn(
+                                            "a main file to the project but it has attachments. Change packaging to 'pom'.");
+                            getLog().warn("");
+                            getLog().warn("Incomplete projects like this will fail in future Maven versions!");
+                            getLog().warn("");
+                        } else {
+                            throw new MojoException("The packaging plugin for this project did not assign "
+                                    + "a main file to the project but it has attachments. Change packaging to 'pom'.");
+                        }
+                    }
                 } else {
-                    throw new MojoExecutionException("The packaging plugin for project " + project.getArtifactId()
-                            + " did not assign a main file to the project but it has attachments. Change packaging"
-                            + " to 'pom'.");
+                    throw new MojoException("The packaging for this project did not assign "
+                            + "a file to the attached artifact: " + installable);
                 }
-            } else {
-                throw new MojoExecutionException("The packaging plugin for project " + project.getArtifactId()
-                        + " did not assign a file to the build artifact");
             }
         }
 
-        for (org.apache.maven.artifact.Artifact attached : project.getAttachedArtifacts()) {
-            getLog().debug("Attaching for install: " + attached.getId());
-            request.addArtifact(RepositoryUtils.toArtifact(attached));
-        }
+        return ArtifactInstallerRequest.build(session, installables);
     }
 
-    private boolean isFile(File file) {
-        return file != null && file.isFile();
+    private boolean isValidPath(Artifact a) {
+        return getArtifactManager().getPath(a).filter(Files::isRegularFile).isPresent();
+    }
+
+    void setSkip(boolean skip) {
+        this.skip = skip;
+    }
+
+    protected Log getLog() {
+        return log;
+    }
+
+    private ArtifactInstaller getArtifactInstaller() {
+        return session.getService(ArtifactInstaller.class);
+    }
+
+    private ArtifactManager getArtifactManager() {
+        return session.getService(ArtifactManager.class);
+    }
+
+    private ProjectManager getProjectManager() {
+        return session.getService(ProjectManager.class);
     }
 }

@@ -22,58 +22,45 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.function.Predicate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.Parent;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.codehaus.plexus.util.FileUtils;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-import org.eclipse.aether.DefaultRepositoryCache;
-import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.ArtifactType;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.installation.InstallRequest;
-import org.eclipse.aether.installation.InstallationException;
-import org.eclipse.aether.repository.LocalRepository;
-import org.eclipse.aether.repository.LocalRepositoryManager;
-import org.eclipse.aether.util.artifact.SubArtifact;
-
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
+import org.apache.maven.api.Artifact;
+import org.apache.maven.api.Session;
+import org.apache.maven.api.di.Inject;
+import org.apache.maven.api.model.Model;
+import org.apache.maven.api.model.Parent;
+import org.apache.maven.api.plugin.Log;
+import org.apache.maven.api.plugin.MojoException;
+import org.apache.maven.api.plugin.annotations.Mojo;
+import org.apache.maven.api.plugin.annotations.Parameter;
+import org.apache.maven.api.services.ArtifactInstaller;
+import org.apache.maven.api.services.ArtifactInstallerException;
+import org.apache.maven.api.services.ArtifactManager;
+import org.apache.maven.api.services.xml.ModelXmlFactory;
+import org.apache.maven.api.services.xml.XmlReaderException;
 
 /**
  * Installs a file in the local repository.
- *
- * @author <a href="mailto:brett@apache.org">Brett Porter</a>
  */
-@Mojo(name = "install-file", requiresProject = false, aggregator = true, threadSafe = true)
-public class InstallFileMojo extends AbstractMojo {
-    private static final String LS = System.lineSeparator();
+@Mojo(name = "install-file", projectRequired = false, aggregator = true)
+@SuppressWarnings("unused")
+public class InstallFileMojo implements org.apache.maven.api.plugin.Mojo {
+    private static final String TAR = "tar.";
+    private static final String ILLEGAL_VERSION_CHARS = "\\/:\"<>|?*[](){},";
 
-    @Component
-    private RepositorySystem repositorySystem;
+    @Inject
+    private Log log;
 
-    @Parameter(defaultValue = "${session}", required = true, readonly = true)
-    private MavenSession session;
+    @Inject
+    private Session session;
 
     /**
      * GroupId of the artifact to be installed. Retrieved from POM file if one is specified or extracted from
@@ -116,7 +103,7 @@ public class InstallFileMojo extends AbstractMojo {
      * The file to be installed in the local repository.
      */
     @Parameter(property = "file", required = true)
-    private File file;
+    private Path file;
 
     /**
      * The bundled API docs for the artifact.
@@ -124,7 +111,7 @@ public class InstallFileMojo extends AbstractMojo {
      * @since 2.3
      */
     @Parameter(property = "javadoc")
-    private File javadoc;
+    private Path javadoc;
 
     /**
      * The bundled sources for the artifact.
@@ -132,7 +119,7 @@ public class InstallFileMojo extends AbstractMojo {
      * @since 2.3
      */
     @Parameter(property = "sources")
-    private File sources;
+    private Path sources;
 
     /**
      * Location of an existing POM file to be installed alongside the main artifact, given by the {@link #file}
@@ -141,7 +128,7 @@ public class InstallFileMojo extends AbstractMojo {
      * @since 2.1
      */
     @Parameter(property = "pomFile")
-    private File pomFile;
+    private Path pomFile;
 
     /**
      * Generate a minimal POM for the artifact if none is supplied via the parameter {@link #pomFile}. Defaults to
@@ -159,152 +146,145 @@ public class InstallFileMojo extends AbstractMojo {
      * @since 2.2
      */
     @Parameter(property = "localRepositoryPath")
-    private File localRepositoryPath;
-
-    private static final Predicate<String> IS_EMPTY = s -> isNull(s) || s.isEmpty();
-
-    private static final Predicate<String> IS_POM_PACKAGING = "pom"::equals;
+    private Path localRepositoryPath;
 
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        if (!file.exists()) {
-            String message = "The specified file '" + file.getPath() + "' does not exist";
-            getLog().error(message);
-            throw new MojoFailureException(message);
+    public void execute() {
+        if (!Files.exists(file)) {
+            String message = "The specified file '" + file + "' does not exist";
+            log.error(message);
+            throw new MojoException(message);
         }
 
-        RepositorySystemSession repositorySystemSession = session.getRepositorySession();
+        Session session = this.session;
+
+        List<Artifact> installableArtifacts = new ArrayList<>();
+
+        // Override the default local repository
         if (localRepositoryPath != null) {
-            // "clone" repository session and replace localRepository
-            DefaultRepositorySystemSession newSession =
-                    new DefaultRepositorySystemSession(session.getRepositorySession());
-            // Clear cache, since we're using a new local repository
-            newSession.setCache(new DefaultRepositoryCache());
-            // keep same repositoryType
-            String contentType = newSession.getLocalRepository().getContentType();
-            if ("enhanced".equals(contentType)) {
-                contentType = "default";
-            }
-            LocalRepositoryManager localRepositoryManager = repositorySystem.newLocalRepositoryManager(
-                    newSession, new LocalRepository(localRepositoryPath, contentType));
-            newSession.setLocalRepositoryManager(localRepositoryManager);
-            repositorySystemSession = newSession;
-            getLog().debug("localRepoPath: "
-                    + localRepositoryManager.getRepository().getBasedir());
+            session = session.withLocalRepository(session.createLocalRepository(localRepositoryPath));
+
+            log.debug("localRepoPath: " + localRepositoryPath);
         }
 
-        File temporaryPom = null;
-
-        if (pomFile == null) {
-            temporaryPom = readingPomFromJarFile();
-            if (!Boolean.TRUE.equals(generatePom)) {
-                pomFile = temporaryPom;
-                getLog().debug("Using JAR embedded POM as pomFile");
-            }
+        Path deployedPom;
+        Path temporaryPom = null;
+        if (pomFile != null) {
+            deployedPom = pomFile;
+            processModel(readModel(deployedPom));
         } else {
-            processModel(readModel(pomFile));
+            if (!Boolean.TRUE.equals(generatePom)) {
+                temporaryPom = readingPomFromJarFile();
+                deployedPom = temporaryPom;
+                if (deployedPom != null) {
+                    log.debug("Using JAR embedded POM as pomFile");
+                }
+            } else {
+                deployedPom = null;
+            }
         }
 
-        if (isNull(groupId) || isNull(artifactId) || isNull(version) || isNull(packaging)) {
-            throw new MojoExecutionException("The artifact information is incomplete: 'groupId', 'artifactId', "
+        if (groupId == null || artifactId == null || version == null || packaging == null) {
+            throw new MojoException("The artifact information is incomplete: 'groupId', 'artifactId', "
                     + "'version' and 'packaging' are required.");
         }
 
         if (!isValidId(groupId) || !isValidId(artifactId) || !isValidVersion(version)) {
-            throw new MojoExecutionException("The artifact information is not valid: uses invalid characters.");
+            throw new MojoException("The artifact information is not valid: uses invalid characters.");
         }
 
-        InstallRequest installRequest = new InstallRequest();
+        boolean isFilePom = classifier == null && "pom".equals(packaging);
+        Artifact artifact = session.createArtifact(
+                groupId, artifactId, version, classifier, isFilePom ? "pom" : getExtension(file), packaging);
 
-        boolean isFilePom = isNull(classifier) && IS_POM_PACKAGING.test(packaging);
+        if (file.equals(getLocalRepositoryFile(artifact))) {
+            throw new MojoException("Cannot install artifact. "
+                    + "Artifact is already in the local repository.\n\nFile in question is: " + file + "\n");
+        }
+
+        ArtifactManager artifactManager = session.getService(ArtifactManager.class);
+        artifactManager.setPath(artifact, file);
+        installableArtifacts.add(artifact);
+
         if (!isFilePom) {
-            ArtifactType artifactType =
-                    repositorySystemSession.getArtifactTypeRegistry().get(packaging);
-            if (nonNull(artifactType) && IS_EMPTY.test(classifier) && !IS_EMPTY.test(artifactType.getClassifier())) {
-                classifier = artifactType.getClassifier();
-            }
-        }
-        Artifact mainArtifact = new DefaultArtifact(
-                        groupId, artifactId, classifier, isFilePom ? "pom" : getExtension(file), version)
-                .setFile(file);
-        installRequest.addArtifact(mainArtifact);
-
-        File artifactLocalFile = getLocalRepositoryFile(repositorySystemSession, mainArtifact);
-        File pomLocalFile = getPomLocalRepositoryFile(repositorySystemSession, mainArtifact);
-
-        if (file.equals(artifactLocalFile)) {
-            throw new MojoFailureException("Cannot install artifact. " + "Artifact is already in the local repository."
-                    + LS + LS + "File in question is: " + file + LS);
-        }
-
-        if (!IS_POM_PACKAGING.test(packaging)) {
-            if (isNull(pomFile)) {
-                if (Boolean.TRUE.equals(generatePom) || (generatePom == null && !pomLocalFile.exists())) {
-                    temporaryPom = generatePomFile();
-                    getLog().debug("Installing generated POM");
-                    installRequest.addArtifact(new SubArtifact(mainArtifact, "", "pom", temporaryPom));
-                } else if (generatePom == null) {
-                    getLog().debug("Skipping installation of generated POM, already present in local repository");
-                }
+            Artifact pomArtifact = session.createArtifact(groupId, artifactId, version, null, "pom", null);
+            if (deployedPom != null) {
+                artifactManager.setPath(pomArtifact, deployedPom);
+                installableArtifacts.add(pomArtifact);
             } else {
-                installRequest.addArtifact(new SubArtifact(mainArtifact, "", "pom", pomFile));
+                temporaryPom = generatePomFile();
+                deployedPom = temporaryPom;
+                artifactManager.setPath(pomArtifact, deployedPom);
+                if (Boolean.TRUE.equals(generatePom)
+                        || (generatePom == null && !Files.exists(getLocalRepositoryFile(pomArtifact)))) {
+                    log.debug("Installing generated POM");
+                    installableArtifacts.add(pomArtifact);
+                } else if (generatePom == null) {
+                    log.debug("Skipping installation of generated POM, already present in local repository");
+                }
             }
         }
 
         if (sources != null) {
-            installRequest.addArtifact(new SubArtifact(mainArtifact, "sources", "jar", sources));
+            Artifact sourcesArtifact = session.createArtifact(groupId, artifactId, version, "sources", "jar", null);
+            artifactManager.setPath(sourcesArtifact, sources);
+            installableArtifacts.add(sourcesArtifact);
         }
 
         if (javadoc != null) {
-            installRequest.addArtifact(new SubArtifact(mainArtifact, "javadoc", "jar", javadoc));
+            Artifact javadocArtifact = session.createArtifact(groupId, artifactId, version, "javadoc", "jar", null);
+            artifactManager.setPath(javadocArtifact, javadoc);
+            installableArtifacts.add(javadocArtifact);
         }
 
         try {
-            repositorySystem.install(repositorySystemSession, installRequest);
-        } catch (InstallationException e) {
-            throw new MojoExecutionException(e.getMessage(), e);
+            ArtifactInstaller artifactInstaller = session.getService(ArtifactInstaller.class);
+            artifactInstaller.install(session, installableArtifacts);
+        } catch (ArtifactInstallerException e) {
+            throw new MojoException(e.getMessage(), e);
         } finally {
             if (temporaryPom != null) {
-                // noinspection ResultOfMethodCallIgnored
-                temporaryPom.delete();
+                try {
+                    Files.deleteIfExists(temporaryPom);
+                } catch (IOException e) {
+                    // ignore
+                }
             }
         }
     }
 
-    private static final Pattern POM_ENTRY_PATTERN = Pattern.compile("META-INF/maven/.*/pom\\.xml");
+    private Path readingPomFromJarFile() {
+        Pattern pomEntry = Pattern.compile("META-INF/maven/.*/pom\\.xml");
+        try {
+            try (JarFile jarFile = new JarFile(file.toFile())) {
+                JarEntry entry = jarFile.stream()
+                        .filter(e -> pomEntry.matcher(e.getName()).matches())
+                        .findFirst()
+                        .orElse(null);
+                if (entry != null) {
+                    log.debug("Loading " + entry.getName());
 
-    private static final Predicate<JarEntry> IS_POM_ENTRY =
-            entry -> POM_ENTRY_PATTERN.matcher(entry.getName()).matches();
+                    try (InputStream pomInputStream = jarFile.getInputStream(entry)) {
+                        String base = file.getFileName().toString();
+                        if (base.indexOf('.') > 0) {
+                            base = base.substring(0, base.lastIndexOf('.'));
+                        }
+                        Path pomFile = File.createTempFile(base, ".pom").toPath();
 
-    private File readingPomFromJarFile() throws MojoExecutionException {
+                        Files.copy(pomInputStream, pomFile, StandardCopyOption.REPLACE_EXISTING);
 
-        String base = file.getName();
-        if (base.contains(".")) {
-            base = base.substring(0, base.lastIndexOf('.'));
-        }
+                        processModel(readModel(pomFile));
 
-        try (JarFile jarFile = new JarFile(file)) {
-
-            JarEntry pomEntry = jarFile.stream().filter(IS_POM_ENTRY).findAny().orElse(null);
-
-            if (isNull(pomEntry)) {
-                // This means there is no entry which matches the "pom.xml"...(or in other words: not packaged by Maven)
-                getLog().info("pom.xml not found in " + file.getName());
-                return null;
+                        return pomFile;
+                    }
+                } else {
+                    log.info("pom.xml not found in " + file.getFileName());
+                }
             }
-
-            Path tempPomFile = Files.createTempFile(base, ".pom");
-
-            Files.copy(jarFile.getInputStream(pomEntry), tempPomFile, StandardCopyOption.REPLACE_EXISTING);
-
-            getLog().debug("Loading " + pomEntry.getName());
-            processModel(readModel(tempPomFile.toFile()));
-            return tempPomFile.toFile();
-
         } catch (IOException e) {
             // ignore, artifact not packaged by Maven
-            return null;
         }
+        return null;
     }
 
     /**
@@ -312,17 +292,19 @@ public class InstallFileMojo extends AbstractMojo {
      *
      * @param pomFile The path of the POM file to parse, must not be <code>null</code>.
      * @return The model from the POM file, never <code>null</code>.
-     * @throws MojoExecutionException If the POM could not be parsed.
+     * @throws MojoException If the POM could not be parsed.
      */
-    private Model readModel(File pomFile) throws MojoExecutionException {
-        try (InputStream reader = Files.newInputStream(pomFile.toPath())) {
-            return new MavenXpp3Reader().read(reader);
+    private Model readModel(Path pomFile) throws MojoException {
+        try {
+            try (InputStream is = Files.newInputStream(pomFile)) {
+                return session.getService(ModelXmlFactory.class).read(is);
+            }
         } catch (FileNotFoundException e) {
-            throw new MojoExecutionException("File not found " + pomFile, e);
+            throw new MojoException("File not found " + pomFile, e);
         } catch (IOException e) {
-            throw new MojoExecutionException("Error reading POM " + pomFile, e);
-        } catch (XmlPullParserException e) {
-            throw new MojoExecutionException("Error parsing POM " + pomFile, e);
+            throw new MojoException("Error reading POM " + pomFile, e);
+        } catch (XmlReaderException e) {
+            throw new MojoException("Error parsing POM " + pomFile, e);
         }
     }
 
@@ -360,18 +342,14 @@ public class InstallFileMojo extends AbstractMojo {
      * @return The generated model, never <code>null</code>.
      */
     private Model generateModel() {
-        Model model = new Model();
-
-        model.setModelVersion("4.0.0");
-
-        model.setGroupId(groupId);
-        model.setArtifactId(artifactId);
-        model.setVersion(version);
-        model.setPackaging(packaging);
-
-        model.setDescription("POM was created from install:install-file");
-
-        return model;
+        return Model.newBuilder()
+                .modelVersion("4.0.0")
+                .groupId(groupId)
+                .artifactId(artifactId)
+                .version(version)
+                .packaging(packaging)
+                .description("POM was created from install:install-file")
+                .build();
     }
 
     /**
@@ -379,19 +357,18 @@ public class InstallFileMojo extends AbstractMojo {
      * the generated file when no longer needed.
      *
      * @return The path to the generated POM file, never <code>null</code>.
-     * @throws MojoExecutionException If the POM file could not be generated.
+     * @throws MojoException If the POM file could not be generated.
      */
-    private File generatePomFile() throws MojoExecutionException {
+    private Path generatePomFile() throws MojoException {
         Model model = generateModel();
         try {
-            Path tempPomFile = Files.createTempFile("mvninstall", ".pom");
-
-            try (OutputStream writer = Files.newOutputStream(tempPomFile)) {
-                new MavenXpp3Writer().write(writer, model);
-                return tempPomFile.toFile();
+            Path pomFile = File.createTempFile("mvninstall", ".pom").toPath();
+            try (Writer writer = Files.newBufferedWriter(pomFile)) {
+                session.getService(ModelXmlFactory.class).write(model, writer);
             }
+            return pomFile;
         } catch (IOException e) {
-            throw new MojoExecutionException("Error writing temporary POM file: " + e.getMessage(), e);
+            throw new MojoException("Error writing temporary POM file: " + e.getMessage(), e);
         }
     }
 
@@ -399,33 +376,21 @@ public class InstallFileMojo extends AbstractMojo {
      * Gets the path of the specified artifact within the local repository. Note that the returned path need not exist
      * (yet).
      */
-    private File getLocalRepositoryFile(RepositorySystemSession session, Artifact artifact) {
-        String path = session.getLocalRepositoryManager().getPathForLocalArtifact(artifact);
-        return new File(session.getLocalRepository().getBasedir(), path);
+    private Path getLocalRepositoryFile(Artifact artifact) {
+        return session.getPathForLocalArtifact(artifact);
     }
 
     /**
-     * Gets the path of the specified artifact POM within the local repository. Note that the returned path need
-     * not exist (yet).
+     * Get file extension, honoring various {@code tar.xxx} combinations.
      */
-    private File getPomLocalRepositoryFile(RepositorySystemSession session, Artifact artifact) {
-        SubArtifact pomArtifact = new SubArtifact(artifact, "", "pom");
-        String path = session.getLocalRepositoryManager().getPathForLocalArtifact(pomArtifact);
-        return new File(session.getLocalRepository().getBasedir(), path);
-    }
-
-    // these below should be shared (duplicated in m-install-p, m-deploy-p)
-
-    /**
-     * Specialization of {@link FileUtils#getExtension(String)} that honors various {@code tar.xxx} combinations.
-     */
-    private String getExtension(final File file) {
-        String filename = file.getName();
-        if (filename.contains(".tar.")) {
-            return "tar." + FileUtils.getExtension(filename);
-        } else {
-            return FileUtils.getExtension(filename);
+    private String getExtension(final Path file) {
+        String filename = file.getFileName().toString();
+        int lastDot = filename.lastIndexOf('.');
+        if (lastDot > 0 && lastDot < filename.length() - 1) {
+            String ext = filename.substring(lastDot + 1);
+            return filename.regionMatches(lastDot + 1 - TAR.length(), TAR, 0, TAR.length()) ? TAR + ext : ext;
         }
+        return "";
     }
 
     /**
@@ -448,8 +413,6 @@ public class InstallFileMojo extends AbstractMojo {
         }
         return true;
     }
-
-    private static final String ILLEGAL_VERSION_CHARS = "\\/:\"<>|?*[](){},";
 
     /**
      * Returns {@code true} if passed in string is "valid Maven (simple. non range, expression, etc) version".
