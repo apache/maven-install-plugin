@@ -25,7 +25,7 @@
   <parent>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-plugins</artifactId>
-    <version>37</version>
+    <version>39</version>
     <relativePath />
   </parent>
 
@@ -65,8 +65,10 @@
   <properties>
     <javaVersion>8</javaVersion>
     <mavenVersion>3.2.5</mavenVersion>
-    <aetherVersion>1.0.0.v20140518</aetherVersion> <!-- Maven bound -->
-    <slf4jVersion>1.7.5</slf4jVersion> <!-- Maven bound -->
+    <!-- Maven bound -->
+    <aetherVersion>1.0.0.v20140518</aetherVersion>
+    <!-- Maven bound -->
+    <slf4jVersion>1.7.5</slf4jVersion>
 
     <!-- plugin versions used in IT tests -->
     <mavenAntrunPluginVersion>3.1.0</mavenAntrunPluginVersion>
@@ -117,7 +119,8 @@
       <groupId>org.eclipse.aether</groupId>
       <artifactId>aether-util</artifactId>
       <version>${aetherVersion}</version>
-      <scope>compile</scope> <!-- To work in Maven versions older than 3.9.0 -->
+      <!-- To work in Maven versions older than 3.9.0 -->
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
@@ -143,7 +146,8 @@
       <version>3.3.0</version>
       <scope>test</scope>
     </dependency>
-    <dependency> <!-- used by maven-plugin-testing-harness, don't give it compile scope! -->
+    <dependency>
+      <!-- used by maven-plugin-testing-harness, don't give it compile scope! -->
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-compat</artifactId>
       <version>${mavenVersion}</version>
