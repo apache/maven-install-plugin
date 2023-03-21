@@ -82,6 +82,18 @@ public class InstallMojo extends AbstractMojo {
     @Parameter(property = "maven.install.skip", defaultValue = "false")
     private boolean skip;
 
+    /**
+     * Set this to <code>true</code> to allow incomplete project processing. By default, such projects are forbidden
+     * and Mojo will fail to process them. Incomplete project is a Maven Project that has any other packaging than
+     * "pom" and has no main artifact packaged. In the majority of cases, what user really wants here is a project
+     * with "pom" packaging and some classified artifact attached (typical example is some assembly being packaged
+     * and attached with classifier).
+     *
+     * @since 3.1.1
+     */
+    @Parameter(defaultValue = "false", property = "allowIncompleteProjects")
+    private boolean allowIncompleteProjects;
+
     private enum State {
         SKIPPED,
         INSTALLED,
@@ -193,11 +205,21 @@ public class InstallMojo extends AbstractMojo {
             if (isFile(mavenMainArtifact.getFile())) {
                 request.addArtifact(RepositoryUtils.toArtifact(mavenMainArtifact));
             } else if (!project.getAttachedArtifacts().isEmpty()) {
-                throw new MojoExecutionException("The packaging plugin for this project did not assign "
-                        + "a main file to the project but it has attachments. Change packaging to 'pom'.");
+                if (allowIncompleteProjects) {
+                    getLog().warn( "" );
+                    getLog().warn( "The packaging plugin for this project did not assign" );
+                    getLog().warn( "a main file to the project but it has attachments. Change packaging to 'pom'." );
+                    getLog().warn( "" );
+                    getLog().warn( "Incomplete projects like this will fail in future Maven versions!" );
+                    getLog().warn( "" );
+                } else
+                {
+                    throw new MojoExecutionException( "The packaging plugin for this project did not assign "
+                            + "a main file to the project but it has attachments. Change packaging to 'pom'." );
+                }
             } else {
                 throw new MojoExecutionException(
-                        "The packaging for this project did not assign " + "a file to the build artifact");
+                        "The packaging for this project did not assign a file to the build artifact");
             }
         }
 
