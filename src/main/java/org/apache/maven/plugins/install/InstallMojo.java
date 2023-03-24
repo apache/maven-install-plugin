@@ -82,6 +82,18 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
     @Parameter(property = "maven.install.skip", defaultValue = "false")
     private boolean skip;
 
+    /**
+     * Set this to <code>true</code> to allow incomplete project processing. By default, such projects are forbidden
+     * and Mojo will fail to process them. Incomplete project is a Maven Project that has any other packaging than
+     * "pom" and has no main artifact packaged. In the majority of cases, what user really wants here is a project
+     * with "pom" packaging and some classified artifact attached (typical example is some assembly being packaged
+     * and attached with classifier).
+     *
+     * @since 3.1.1
+     */
+    @Parameter(property = "allowIncompleteProjects", defaultValue = "false")
+    private boolean allowIncompleteProjects;
+
     private enum State {
         SKIPPED,
         INSTALLED,
@@ -127,7 +139,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
                 installProject(processProject(project));
                 putState(State.INSTALLED);
             } else {
-                log.info("Deferring install for " + project.getGroupId() + ":" + project.getArtifactId() + ":"
+                getLog().info("Deferring install for " + project.getGroupId() + ":" + project.getArtifactId() + ":"
                         + project.getVersion() + " at end");
                 putState(State.TO_BE_INSTALLED, processProject(project));
             }
@@ -187,9 +199,23 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
             artifactManager.setPath(pomArtifact, pomPath);
             installables.add(pomArtifact);
             // main artifact
-            if (!isValidPath.test(artifact) && !attachedArtifacts.isEmpty()) {
-                throw new MojoException("The packaging plugin for this project did not assign "
-                        + "a main file to the project but it has attachments. Change packaging to 'pom'.");
+            if (!isValidPath.test(artifact)) {
+                if (!attachedArtifacts.isEmpty()) {
+                    if (allowIncompleteProjects) {
+                        getLog().warn("");
+                        getLog().warn("The packaging plugin for this project did not assign");
+                        getLog().warn("a main file to the project but it has attachments. Change packaging to 'pom'.");
+                        getLog().warn("");
+                        getLog().warn("Incomplete projects like this will fail in future Maven versions!");
+                        getLog().warn("");
+                    } else {
+                        throw new MojoException("The packaging plugin for this project did not assign "
+                                + "a main file to the project but it has attachments. Change packaging to 'pom'.");
+                    }
+                } else {
+                    throw new MojoException(
+                            "The packaging for this project did not assign a file to the build artifact");
+                }
             }
             installables.add(artifact);
         } else {
@@ -213,5 +239,9 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
 
     void setSkip(boolean skip) {
         this.skip = skip;
+    }
+
+    protected Log getLog() {
+        return log;
     }
 }
