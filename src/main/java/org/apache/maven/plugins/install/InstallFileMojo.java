@@ -218,7 +218,7 @@ public class InstallFileMojo extends AbstractMojo {
             ArtifactType artifactType =
                     repositorySystemSession.getArtifactTypeRegistry().get(packaging);
             if (artifactType != null
-                    && StringUtils.isEmpty(classifier)
+                    && (classifier == null || classifier.isEmpty())
                     && !StringUtils.isEmpty(artifactType.getClassifier())) {
                 classifier = artifactType.getClassifier();
             }
