@@ -19,9 +19,10 @@
 package org.apache.maven.plugins.install;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.execution.MavenSession;
@@ -122,15 +123,15 @@ public class InstallMojo extends AbstractMojo {
             getLog().info("Skipping artifact installation");
             putState(State.SKIPPED);
         } else {
-            if (!installAtEnd) {
+            if (installAtEnd) {
+                getLog().info("Deferring install for " + project.getGroupId() + ":" + project.getArtifactId() + ":"
+                        + project.getVersion() + " at end");
+                putState(State.TO_BE_INSTALLED);
+            } else {
                 InstallRequest request = new InstallRequest();
                 processProject(project, request);
                 installProject(request);
                 putState(State.INSTALLED);
-            } else {
-                getLog().info("Deferring install for " + project.getGroupId() + ":" + project.getArtifactId() + ":"
-                        + project.getVersion() + " at end");
-                putState(State.TO_BE_INSTALLED);
             }
         }
 
@@ -149,35 +150,25 @@ public class InstallMojo extends AbstractMojo {
     }
 
     private boolean allProjectsMarked(List<MavenProject> allProjectsUsingPlugin) {
-        for (MavenProject reactorProject : allProjectsUsingPlugin) {
-            if (!hasState(reactorProject)) {
-                return false;
-            }
-        }
-        return true;
+        return allProjectsUsingPlugin.stream().allMatch(this::hasState);
     }
 
+    private final Predicate<MavenProject> hasMavenInstallPluginExecution =
+            rp -> hasExecution(rp.getPlugin("org.apache.maven.plugins:maven-install-plugin"));
+
     private List<MavenProject> getAllProjectsUsingPlugin() {
-        ArrayList<MavenProject> result = new ArrayList<>();
-        for (MavenProject reactorProject : reactorProjects) {
-            if (hasExecution(reactorProject.getPlugin("org.apache.maven.plugins:maven-install-plugin"))) {
-                result.add(reactorProject);
-            }
-        }
-        return result;
+        return reactorProjects.stream().filter(hasMavenInstallPluginExecution).collect(Collectors.toList());
     }
+
+    private final Predicate<PluginExecution> havingGoals = pe -> !pe.getGoals().isEmpty();
+    private final Predicate<PluginExecution> nonePhase = pe -> !"none".equalsIgnoreCase(pe.getPhase());
 
     private boolean hasExecution(Plugin plugin) {
         if (plugin == null) {
             return false;
         }
 
-        for (PluginExecution execution : plugin.getExecutions()) {
-            if (!execution.getGoals().isEmpty() && !"none".equalsIgnoreCase(execution.getPhase())) {
-                return true;
-            }
-        }
-        return false;
+        return plugin.getExecutions().stream().filter(havingGoals).anyMatch(nonePhase);
     }
 
     private void installProject(InstallRequest request) throws MojoExecutionException {

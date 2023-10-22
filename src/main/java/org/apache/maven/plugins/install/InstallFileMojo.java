@@ -23,10 +23,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
-import java.io.Writer;
 import java.nio.file.Files;
-import java.util.Enumeration;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
@@ -43,10 +43,6 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.codehaus.plexus.util.FileUtils;
-import org.codehaus.plexus.util.IOUtil;
-import org.codehaus.plexus.util.StringUtils;
-import org.codehaus.plexus.util.xml.XmlStreamReader;
-import org.codehaus.plexus.util.xml.XmlStreamWriter;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -60,6 +56,9 @@ import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.util.artifact.SubArtifact;
+
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 /**
  * Installs a file in the local repository.
@@ -162,6 +161,10 @@ public class InstallFileMojo extends AbstractMojo {
     @Parameter(property = "localRepositoryPath")
     private File localRepositoryPath;
 
+    private static final Predicate<String> IS_EMPTY = s -> isNull(s) || s.isEmpty();
+
+    private static final Predicate<String> IS_POM_PACKAGING = "pom"::equals;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (!file.exists()) {
@@ -192,17 +195,17 @@ public class InstallFileMojo extends AbstractMojo {
 
         File temporaryPom = null;
 
-        if (pomFile != null) {
-            processModel(readModel(pomFile));
-        } else {
+        if (pomFile == null) {
             temporaryPom = readingPomFromJarFile();
             if (!Boolean.TRUE.equals(generatePom)) {
                 pomFile = temporaryPom;
                 getLog().debug("Using JAR embedded POM as pomFile");
             }
+        } else {
+            processModel(readModel(pomFile));
         }
 
-        if (groupId == null || artifactId == null || version == null || packaging == null) {
+        if (isNull(groupId) || isNull(artifactId) || isNull(version) || isNull(packaging)) {
             throw new MojoExecutionException("The artifact information is incomplete: 'groupId', 'artifactId', "
                     + "'version' and 'packaging' are required.");
         }
@@ -213,13 +216,11 @@ public class InstallFileMojo extends AbstractMojo {
 
         InstallRequest installRequest = new InstallRequest();
 
-        boolean isFilePom = classifier == null && "pom".equals(packaging);
+        boolean isFilePom = isNull(classifier) && IS_POM_PACKAGING.test(packaging);
         if (!isFilePom) {
             ArtifactType artifactType =
                     repositorySystemSession.getArtifactTypeRegistry().get(packaging);
-            if (artifactType != null
-                    && (classifier == null || classifier.isEmpty())
-                    && !StringUtils.isEmpty(artifactType.getClassifier())) {
+            if (nonNull(artifactType) && IS_EMPTY.test(classifier) && !IS_EMPTY.test(artifactType.getClassifier())) {
                 classifier = artifactType.getClassifier();
             }
         }
@@ -236,10 +237,8 @@ public class InstallFileMojo extends AbstractMojo {
                     + LS + LS + "File in question is: " + file + LS);
         }
 
-        if (!"pom".equals(packaging)) {
-            if (pomFile != null) {
-                installRequest.addArtifact(new SubArtifact(mainArtifact, "", "pom", pomFile));
-            } else {
+        if (!IS_POM_PACKAGING.test(packaging)) {
+            if (isNull(pomFile)) {
                 if (Boolean.TRUE.equals(generatePom) || (generatePom == null && !pomLocalFile.exists())) {
                     temporaryPom = generatePomFile();
                     getLog().debug("Installing generated POM");
@@ -247,6 +246,8 @@ public class InstallFileMojo extends AbstractMojo {
                 } else if (generatePom == null) {
                     getLog().debug("Skipping installation of generated POM, already present in local repository");
                 }
+            } else {
+                installRequest.addArtifact(new SubArtifact(mainArtifact, "", "pom", pomFile));
             }
         }
 
@@ -270,70 +271,40 @@ public class InstallFileMojo extends AbstractMojo {
         }
     }
 
+    private static final Pattern POM_ENTRY_PATTERN = Pattern.compile("META-INF/maven/.*/pom\\.xml");
+
+    private static final Predicate<JarEntry> IS_POM_ENTRY =
+            entry -> POM_ENTRY_PATTERN.matcher(entry.getName()).matches();
+
     private File readingPomFromJarFile() throws MojoExecutionException {
-        File pomFile = null;
 
-        JarFile jarFile = null;
-        try {
-            Pattern pomEntry = Pattern.compile("META-INF/maven/.*/pom\\.xml");
+        String base = file.getName();
+        if (base.contains(".")) {
+            base = base.substring(0, base.lastIndexOf('.'));
+        }
 
-            jarFile = new JarFile(file);
+        try (JarFile jarFile = new JarFile(file)) {
 
-            Enumeration<JarEntry> jarEntries = jarFile.entries();
+            JarEntry pomEntry = jarFile.stream().filter(IS_POM_ENTRY).findAny().orElse(null);
 
-            while (jarEntries.hasMoreElements()) {
-                JarEntry entry = jarEntries.nextElement();
-
-                if (pomEntry.matcher(entry.getName()).matches()) {
-                    getLog().debug("Loading " + entry.getName());
-
-                    InputStream pomInputStream = null;
-                    OutputStream pomOutputStream = null;
-
-                    try {
-                        pomInputStream = jarFile.getInputStream(entry);
-
-                        String base = file.getName();
-                        if (base.indexOf('.') > 0) {
-                            base = base.substring(0, base.lastIndexOf('.'));
-                        }
-                        pomFile = File.createTempFile(base, ".pom");
-
-                        pomOutputStream = Files.newOutputStream(pomFile.toPath());
-
-                        IOUtil.copy(pomInputStream, pomOutputStream);
-
-                        pomOutputStream.close();
-                        pomOutputStream = null;
-
-                        pomInputStream.close();
-                        pomInputStream = null;
-
-                        processModel(readModel(pomFile));
-
-                        break;
-                    } finally {
-                        IOUtil.close(pomInputStream);
-                        IOUtil.close(pomOutputStream);
-                    }
-                }
-            }
-
-            if (pomFile == null) {
+            if (isNull(pomEntry)) {
+                // This means there is no entry which matches the "pom.xml"...(or in other words: not packaged by Maven)
                 getLog().info("pom.xml not found in " + file.getName());
+                return null;
             }
+
+            Path tempPomFile = Files.createTempFile(base, ".pom");
+
+            Files.copy(jarFile.getInputStream(pomEntry), tempPomFile, StandardCopyOption.REPLACE_EXISTING);
+
+            getLog().debug("Loading " + pomEntry.getName());
+            processModel(readModel(tempPomFile.toFile()));
+            return tempPomFile.toFile();
+
         } catch (IOException e) {
             // ignore, artifact not packaged by Maven
-        } finally {
-            if (jarFile != null) {
-                try {
-                    jarFile.close();
-                } catch (IOException e) {
-                    // we did our best
-                }
-            }
+            return null;
         }
-        return pomFile;
     }
 
     /**
@@ -344,21 +315,14 @@ public class InstallFileMojo extends AbstractMojo {
      * @throws MojoExecutionException If the POM could not be parsed.
      */
     private Model readModel(File pomFile) throws MojoExecutionException {
-        Reader reader = null;
-        try {
-            reader = new XmlStreamReader(pomFile);
-            final Model model = new MavenXpp3Reader().read(reader);
-            reader.close();
-            reader = null;
-            return model;
+        try (InputStream reader = Files.newInputStream(pomFile.toPath())) {
+            return new MavenXpp3Reader().read(reader);
         } catch (FileNotFoundException e) {
             throw new MojoExecutionException("File not found " + pomFile, e);
         } catch (IOException e) {
             throw new MojoExecutionException("Error reading POM " + pomFile, e);
         } catch (XmlPullParserException e) {
             throw new MojoExecutionException("Error parsing POM " + pomFile, e);
-        } finally {
-            IOUtil.close(reader);
         }
     }
 
@@ -419,21 +383,15 @@ public class InstallFileMojo extends AbstractMojo {
      */
     private File generatePomFile() throws MojoExecutionException {
         Model model = generateModel();
-
-        Writer writer = null;
         try {
-            File pomFile = File.createTempFile("mvninstall", ".pom");
+            File tempPomFile = File.createTempFile("mvninstall", ".pom");
 
-            writer = new XmlStreamWriter(pomFile);
-            new MavenXpp3Writer().write(writer, model);
-            writer.close();
-            writer = null;
-
-            return pomFile;
+            try (OutputStream writer = Files.newOutputStream(tempPomFile.toPath())) {
+                new MavenXpp3Writer().write(writer, model);
+                return tempPomFile;
+            }
         } catch (IOException e) {
             throw new MojoExecutionException("Error writing temporary POM file: " + e.getMessage(), e);
-        } finally {
-            IOUtil.close(writer);
         }
     }
 
