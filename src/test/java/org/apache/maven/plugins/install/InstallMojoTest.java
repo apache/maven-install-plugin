@@ -150,6 +150,39 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         assertEquals(13, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
     }
 
+    public void testNonPomInstallWithAttachedArtifactsOnly() throws Exception {
+        File testPom = new File(
+                getBasedir(),
+                "target/test-classes/unit/basic-install-test-with-attached-artifacts/" + "plugin-config.xml");
+
+        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
+
+        assertNotNull(mojo);
+
+        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
+        updateMavenProject(project);
+
+        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
+        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
+        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", createMavenSession());
+
+        artifact = (InstallArtifactStub) project.getArtifact();
+
+        artifact.setFile(null);
+
+        try {
+            mojo.execute();
+            fail("Did not throw mojo execution exception");
+        } catch (MojoExecutionException e) {
+            // expected, message should include artifactId
+            assertEquals(
+                    "The packaging plugin for project maven-install-test did not assign a main file to the project "
+                            + "but it has attachments. Change packaging to 'pom'.",
+                    e.getMessage());
+        }
+    }
+
     public void testUpdateReleaseParamSetToTrue() throws Exception {
         File testPom = new File(getBasedir(), "target/test-classes/unit/configured-install-test/plugin-config.xml");
 
@@ -203,13 +236,43 @@ public class InstallMojoTest extends AbstractMojoTestCase {
 
         try {
             mojo.execute();
-
             fail("Did not throw mojo execution exception");
         } catch (MojoExecutionException e) {
-            // expected
+            // expected, message should include artifactId
+            assertEquals(
+                    "The packaging plugin for project maven-install-test did not assign a file to the build artifact",
+                    e.getMessage());
         }
 
         assertFalse(new File(LOCAL_REPO).exists());
+    }
+
+    public void testInstallIfProjectFileIsNull() throws Exception {
+        File testPom = new File(getBasedir(), "target/test-classes/unit/basic-install-test/plugin-config.xml");
+
+        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
+
+        assertNotNull(mojo);
+
+        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
+        updateMavenProject(project);
+
+        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
+        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
+        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", createMavenSession());
+
+        project.setFile(null);
+
+        assertNull(project.getFile());
+
+        try {
+            mojo.execute();
+            fail("Did not throw mojo execution exception");
+        } catch (MojoExecutionException e) {
+            // expected, message should include artifactId
+            assertEquals("The POM for project maven-install-test could not be attached", e.getMessage());
+        }
     }
 
     public void testInstallIfPackagingIsPom() throws Exception {
