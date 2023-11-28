@@ -32,13 +32,13 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
+import jakarta.inject.Inject;
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.Session;
 import org.apache.maven.api.model.Model;
 import org.apache.maven.api.model.Parent;
 import org.apache.maven.api.plugin.Log;
 import org.apache.maven.api.plugin.MojoException;
-import org.apache.maven.api.plugin.annotations.Component;
 import org.apache.maven.api.plugin.annotations.Mojo;
 import org.apache.maven.api.plugin.annotations.Parameter;
 import org.apache.maven.api.services.ArtifactInstaller;
@@ -50,16 +50,16 @@ import org.apache.maven.api.services.xml.XmlReaderException;
 /**
  * Installs a file in the local repository.
  */
-@Mojo(name = "install-file", requiresProject = false, aggregator = true)
+@Mojo(name = "install-file", projectRequired = false, aggregator = true)
 @SuppressWarnings("unused")
 public class InstallFileMojo implements org.apache.maven.api.plugin.Mojo {
     private static final String TAR = "tar.";
     private static final String ILLEGAL_VERSION_CHARS = "\\/:\"<>|?*[](){},";
 
-    @Component
+    @Inject
     private Log log;
 
-    @Component
+    @Inject
     private Session session;
 
     /**

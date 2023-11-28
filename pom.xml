@@ -72,7 +72,7 @@
 
   <properties>
     <javaVersion>8</javaVersion>
-    <mavenVersion>4.0.0-alpha-8</mavenVersion>
+    <mavenVersion>4.0.0-alpha-9-SNAPSHOT</mavenVersion>
     <!-- Maven bound -->
     <slf4jVersion>1.7.5</slf4jVersion>
 
@@ -81,8 +81,8 @@
     <mavenCompilerPluginVersion>3.10.1</mavenCompilerPluginVersion>
     <mavenEnforcerPluginVersion>3.1.0</mavenEnforcerPluginVersion>
     <mavenJarPluginVersion>3.3.0</mavenJarPluginVersion>
-    <mavenPluginPluginVersion>3.10.1</mavenPluginPluginVersion>
-    <mavenPluginTestingHarnessVersion>4.0.0-alpha-2-SNAPSHOT</mavenPluginTestingHarnessVersion>
+    <mavenPluginPluginVersion>3.10.3-SNAPSHOT</mavenPluginPluginVersion>
+    <mavenPluginTestingHarnessVersion>4.0.0-alpha-3-SNAPSHOT</mavenPluginTestingHarnessVersion>
     <mavenResourcesPluginVersion>3.3.0</mavenResourcesPluginVersion>
     <mavenSourcePluginVersion>3.2.1</mavenSourcePluginVersion>
     <mavenSurefirePluginVersion>3.2.1</mavenSurefirePluginVersion>
@@ -133,6 +133,18 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-nop</artifactId>
       <version>${slf4jVersion}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.enterprise</groupId>
+      <artifactId>jakarta.enterprise.cdi-api</artifactId>
+      <version>3.0.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -25,9 +25,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import jakarta.inject.Inject;
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
 import org.apache.maven.api.Project;
@@ -35,7 +35,6 @@ import org.apache.maven.api.Session;
 import org.apache.maven.api.model.Plugin;
 import org.apache.maven.api.plugin.Log;
 import org.apache.maven.api.plugin.MojoException;
-import org.apache.maven.api.plugin.annotations.Component;
 import org.apache.maven.api.plugin.annotations.LifecyclePhase;
 import org.apache.maven.api.plugin.annotations.Mojo;
 import org.apache.maven.api.plugin.annotations.Parameter;
@@ -51,16 +50,25 @@ import org.apache.maven.api.services.ProjectManager;
 @SuppressWarnings("unused")
 @Mojo(name = "install", defaultPhase = LifecyclePhase.INSTALL)
 public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
-    @Component
+    @Inject
     private Log log;
 
-    @Component
+    @Inject
     private Session session;
 
-    @Component
+    @Inject
+    private ArtifactInstaller artifactInstaller;
+
+    @Inject
+    ArtifactManager artifactManager;
+
+    @Inject
+    ProjectManager projectManager;
+
+    @Inject
     private Project project;
 
-    @Component
+    @Inject
     private MojoExecution mojoExecution;
 
     /**
@@ -101,6 +109,8 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
     }
 
     private static final String INSTALL_PROCESSED_MARKER = InstallMojo.class.getName() + ".processed";
+
+    public InstallMojo() {}
 
     private void putState(State state) {
         session.getPluginContext(project).put(INSTALL_PROCESSED_MARKER, state.name());
@@ -166,7 +176,6 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
 
     private void installProject(ArtifactInstallerRequest request) {
         try {
-            ArtifactInstaller artifactInstaller = session.getService(ArtifactInstaller.class);
             artifactInstaller.install(request);
         } catch (MojoException e) {
             throw e;
@@ -181,11 +190,6 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
      * @throws IllegalArgumentException if project is badly set up.
      */
     private ArtifactInstallerRequest processProject(Project project) {
-        ArtifactManager artifactManager = session.getService(ArtifactManager.class);
-        ProjectManager projectManager = session.getService(ProjectManager.class);
-        Predicate<Artifact> isValidPath =
-                a -> artifactManager.getPath(a).filter(Files::isRegularFile).isPresent();
-
         Artifact artifact = project.getArtifact();
         Collection<Artifact> attachedArtifacts = projectManager.getAttachedArtifacts(project);
         Path pomPath = project.getPomPath().orElse(null);
@@ -199,7 +203,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
             artifactManager.setPath(pomArtifact, pomPath);
             installables.add(pomArtifact);
             // main artifact
-            if (!isValidPath.test(artifact)) {
+            if (!isValidPath(artifact)) {
                 if (!attachedArtifacts.isEmpty()) {
                     if (allowIncompleteProjects) {
                         getLog().warn("");
@@ -225,16 +229,17 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
 
         installables.addAll(attachedArtifacts);
         for (Artifact installable : installables) {
-            if (!isValidPath.test(installable)) {
+            if (!isValidPath(installable)) {
                 throw new MojoException("The packaging for this project did not assign "
                         + "a file to the attached artifact: " + artifact);
             }
         }
 
-        return ArtifactInstallerRequest.builder()
-                .session(session)
-                .artifacts(installables)
-                .build();
+        return ArtifactInstallerRequest.build(session, installables);
+    }
+
+    private boolean isValidPath(Artifact a) {
+        return artifactManager.getPath(a).filter(Files::isRegularFile).isPresent();
     }
 
     void setSkip(boolean skip) {

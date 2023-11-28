@@ -19,28 +19,23 @@
 package org.apache.maven.plugins.install;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import com.google.inject.Inject;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.name.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
 import org.apache.maven.api.Project;
+import org.apache.maven.api.Session;
 import org.apache.maven.api.plugin.Mojo;
-import org.apache.maven.api.plugin.MojoException;
 import org.apache.maven.api.plugin.testing.InjectMojo;
 import org.apache.maven.api.plugin.testing.MojoTest;
-import org.apache.maven.api.plugin.testing.stubs.ArtifactStub;
 import org.apache.maven.api.plugin.testing.stubs.MojoExecutionStub;
 import org.apache.maven.api.plugin.testing.stubs.SessionStub;
 import org.apache.maven.api.services.ArtifactInstaller;
@@ -48,6 +43,7 @@ import org.apache.maven.api.services.ArtifactInstallerRequest;
 import org.apache.maven.api.services.ArtifactManager;
 import org.apache.maven.api.services.ProjectManager;
 import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.internal.impl.DefaultProject;
 import org.apache.maven.internal.impl.InternalSession;
 import org.apache.maven.plugin.testing.stubs.DefaultArtifactHandlerStub;
@@ -59,23 +55,22 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.maven.api.plugin.testing.MojoExtension.getBasedir;
 import static org.apache.maven.api.plugin.testing.MojoExtension.getVariableValueFromObject;
-import static org.apache.maven.api.plugin.testing.MojoExtension.setVariableValueToObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
+/**
+ * @author <a href="mailto:aramirez@apache.org">Allan Ramirez</a>
+ */
 @MojoTest
-public class InstallMojoTest {
+public class InstallMojoPomPackagingTest {
 
     private static final String LOCAL_REPO = "target/local-repo/";
 
     @Inject
-    InternalSession session;
+    Session session;
 
     @Inject
     ArtifactInstaller artifactInstaller;
@@ -93,89 +88,55 @@ public class InstallMojoTest {
 
     @Test
     @InjectMojo(goal = "install")
-    public void testInstallTestEnvironment(InstallMojo mojo) {
-        assertNotNull(mojo);
-    }
-
-    @Test
-    @InjectMojo(goal = "install")
-    public void testBasicInstall(InstallMojo mojo) throws Exception {
+    public void testInstallIfPackagingIsPom(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         Project project = (Project) getVariableValueFromObject(mojo, "project");
-        ((DefaultProject) project)
-                .getProject()
-                .getArtifact()
-                .setFile(Paths.get(getBasedir(), "target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
-                        .toFile());
+        String packaging = project.getPackaging();
+        assertEquals("pom", packaging);
+        artifactManager.setPath(project.getArtifact(), project.getPomPath().get());
 
         ArtifactInstallerRequest request = execute(mojo);
 
         assertNotNull(request);
         Collection<Artifact> artifacts = request.getArtifacts();
         assertEquals(
-                Arrays.asList(
-                        "org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT",
-                        "org.apache.maven.test:maven-install-test:jar:1.0-SNAPSHOT"),
+                Arrays.asList("org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT"),
                 artifacts.stream().map(Artifact::key).collect(Collectors.toList()));
-    }
-
-    @Test
-    @InjectMojo(goal = "install")
-    public void testBasicInstallWithAttachedArtifacts(InstallMojo mojo) throws Exception {
-        assertNotNull(mojo);
-        Project project = (Project) getVariableValueFromObject(mojo, "project");
-        projectManager.attachArtifact(
-                project,
-                new ArtifactStub("org.apache.maven.test", "attached-artifact-test", "", "1.0-SNAPSHOT", "jar"),
-                Paths.get(getBasedir(), "target/test-classes/unit/attached-artifact-test-1.0-SNAPSHOT.jar"));
-        ((DefaultProject) project)
-                .getProject()
-                .getArtifact()
-                .setFile(Paths.get(getBasedir(), "target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
-                        .toFile());
-
-        ArtifactInstallerRequest request = execute(mojo);
-
-        assertNotNull(request);
-        Collection<Artifact> artifacts = request.getArtifacts();
-        assertEquals(
-                Arrays.asList(
-                        "org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT",
-                        "org.apache.maven.test:maven-install-test:jar:1.0-SNAPSHOT",
-                        "org.apache.maven.test:attached-artifact-test:jar:1.0-SNAPSHOT"),
-                artifacts.stream().map(Artifact::key).collect(Collectors.toList()));
-    }
-
-    @Test
-    @InjectMojo(goal = "install")
-    public void testInstallIfArtifactFileIsNull(InstallMojo mojo) throws Exception {
-        assertNotNull(mojo);
-        Project project = (Project) getVariableValueFromObject(mojo, "project");
-        assertFalse(artifactManager.getPath(project.getArtifact()).isPresent());
-
-        assertThrows(MojoException.class, mojo::execute, "Did not throw mojo execution exception");
-    }
-
-    @Test
-    @InjectMojo(goal = "install")
-    public void testSkip(InstallMojo mojo) throws Exception {
-        assertNotNull(mojo);
-        setVariableValueToObject(mojo, "session", this.session);
-        Project project = (Project) getVariableValueFromObject(mojo, "project");
-        mojo.setSkip(true);
-
-        assertNull(execute(mojo));
     }
 
     @Provides
     @Singleton
     @SuppressWarnings("unused")
-    private InternalSession createSession() {
+    private InternalSession createInternalSession() {
         InternalSession session = SessionStub.getMockSession(LOCAL_REPO);
         when(session.getArtifact(any()))
                 .thenAnswer(iom -> new org.apache.maven.internal.impl.DefaultArtifact(
                         session, iom.getArgument(0, org.eclipse.aether.artifact.Artifact.class)));
+        when(session.getMavenSession()).thenAnswer(iom -> new MavenSession(null, null, null));
         return session;
+    }
+
+    @Provides
+    @Singleton
+    @SuppressWarnings("unused")
+    private Project createProject(InternalSession session) {
+        MavenProjectStub project = new MavenProjectStub();
+        project.setFile(new File(PlexusExtension.getBasedir(), "src/test/resources/unit/pom.xml"));
+        project.setGroupId("org.apache.maven.test");
+        project.setArtifactId("maven-install-test");
+        project.setVersion("1.0-SNAPSHOT");
+        project.setPackaging("pom");
+        DefaultArtifact artifact = new DefaultArtifact(
+                "org.apache.maven.test",
+                "maven-install-test",
+                "1.0-SNAPSHOT",
+                null,
+                "pom",
+                null,
+                new DefaultArtifactHandlerStub("pom"));
+        project.setArtifact(artifact);
+        project.setAttachedArtifacts(new ArrayList<>());
+        return new DefaultProject(session, project);
     }
 
     @Provides
@@ -201,38 +162,8 @@ public class InstallMojoTest {
 
     @Provides
     @Singleton
-    @SuppressWarnings("unused")
-    private Project createProject(InternalSession session) {
-        MavenProjectStub project = new MavenProjectStub();
-        project.setFile(new File(PlexusExtension.getBasedir(), "src/test/resources/unit/pom.xml"));
-        project.setGroupId("org.apache.maven.test");
-        project.setArtifactId("maven-install-test");
-        project.setVersion("1.0-SNAPSHOT");
-        project.setPackaging("jar");
-        DefaultArtifact artifact = new DefaultArtifact(
-                "org.apache.maven.test",
-                "maven-install-test",
-                "1.0-SNAPSHOT",
-                null,
-                "jar",
-                null,
-                new DefaultArtifactHandlerStub("jar"));
-        project.setArtifact(artifact);
-        project.setAttachedArtifacts(new ArrayList<>());
-        return new DefaultProject(session, project);
-    }
-
-    @Provides
-    @Singleton
     private MojoExecution createMojoExecution() {
         return new MojoExecutionStub("default-install", "install");
-    }
-
-    @Provides
-    @Singleton
-    @Named("dummy.reactorProjects")
-    private List<Project> getDummyReactorProjects() {
-        return Collections.emptyList();
     }
 
     private <T> ArtifactInstallerRequest execute(Mojo mojo) {
