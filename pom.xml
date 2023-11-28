@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-plugins</artifactId>
-    <version>40</version>
+    <version>41</version>
     <relativePath />
   </parent>
 
@@ -86,6 +86,7 @@
     <mavenResourcesPluginVersion>3.3.0</mavenResourcesPluginVersion>
     <mavenSourcePluginVersion>3.2.1</mavenSourcePluginVersion>
     <mavenSurefirePluginVersion>3.2.1</mavenSurefirePluginVersion>
+    <version.plexus-xml>4.0.1</version.plexus-xml>
 
     <project.build.outputTimestamp>2023-03-21T14:31:18Z</project.build.outputTimestamp>
   </properties>
