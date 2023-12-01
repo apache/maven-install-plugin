@@ -40,7 +40,6 @@ import org.apache.maven.api.model.Model;
 import org.apache.maven.api.plugin.MojoException;
 import org.apache.maven.api.plugin.testing.InjectMojo;
 import org.apache.maven.api.plugin.testing.MojoParameter;
-import org.apache.maven.api.plugin.testing.MojoParameters;
 import org.apache.maven.api.plugin.testing.MojoTest;
 import org.apache.maven.api.plugin.testing.stubs.ArtifactStub;
 import org.apache.maven.api.plugin.testing.stubs.ProjectStub;
@@ -95,30 +94,26 @@ public class InstallFileMojoTest {
 
     @Test
     @InjectMojo(goal = "install-file")
-    @MojoParameters({
-        @MojoParameter(name = "groupId", value = "org.apache.maven.test"),
-        @MojoParameter(name = "artifactId", value = "maven-install-file-test"),
-        @MojoParameter(name = "version", value = "1.0-SNAPSHOT"),
-        @MojoParameter(name = "packaging", value = "jar"),
-        @MojoParameter(
-                name = "file",
-                value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
-    })
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
     public void testInstallFileTestEnvironment(InstallFileMojo mojo) {
         assertNotNull(mojo);
     }
 
     @Test
     @InjectMojo(goal = "install-file")
-    @MojoParameters({
-        @MojoParameter(name = "groupId", value = "org.apache.maven.test"),
-        @MojoParameter(name = "artifactId", value = "maven-install-file-test"),
-        @MojoParameter(name = "version", value = "1.0-SNAPSHOT"),
-        @MojoParameter(name = "packaging", value = "jar"),
-        @MojoParameter(
-                name = "file",
-                value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
-    })
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
     public void testBasicInstallFile(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
@@ -141,13 +136,11 @@ public class InstallFileMojoTest {
 
     @Test
     @InjectMojo(goal = "install-file")
-    @MojoParameters({
-        @MojoParameter(name = "groupId", value = "org.apache.maven.test"),
-        @MojoParameter(name = "artifactId", value = "maven-install-file-test"),
-        @MojoParameter(name = "version", value = "1.0-SNAPSHOT"),
-        @MojoParameter(name = "packaging", value = "jar"),
-        @MojoParameter(name = "file", value = "${project.basedir}/target/test-classes/unit/file-does-not-exist.jar")
-    })
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "file", value = "${project.basedir}/target/test-classes/unit/file-does-not-exist.jar")
     public void testFileDoesNotExists(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
@@ -157,16 +150,14 @@ public class InstallFileMojoTest {
 
     @Test
     @InjectMojo(goal = "install-file")
-    @MojoParameters({
-        @MojoParameter(name = "groupId", value = "org.apache.maven.test"),
-        @MojoParameter(name = "artifactId", value = "maven-install-file-test"),
-        @MojoParameter(name = "version", value = "1.0-SNAPSHOT"),
-        @MojoParameter(name = "packaging", value = "jar"),
-        @MojoParameter(name = "classifier", value = "sources"),
-        @MojoParameter(
-                name = "file",
-                value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
-    })
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "classifier", value = "sources")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
     public void testInstallFileWithClassifier(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
@@ -189,16 +180,14 @@ public class InstallFileMojoTest {
 
     @Test
     @InjectMojo(goal = "install-file")
-    @MojoParameters({
-        @MojoParameter(name = "groupId", value = "org.apache.maven.test"),
-        @MojoParameter(name = "artifactId", value = "maven-install-file-test"),
-        @MojoParameter(name = "version", value = "1.0-SNAPSHOT"),
-        @MojoParameter(name = "packaging", value = "jar"),
-        @MojoParameter(
-                name = "file",
-                value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar"),
-        @MojoParameter(name = "generatePom", value = "true")
-    })
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    @MojoParameter(name = "generatePom", value = "true")
     public void testInstallFileWithGeneratePom(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
@@ -234,16 +223,14 @@ public class InstallFileMojoTest {
 
     @Test
     @InjectMojo(goal = "install-file")
-    @MojoParameters({
-        @MojoParameter(name = "groupId", value = "org.apache.maven.test"),
-        @MojoParameter(name = "artifactId", value = "maven-install-file-test"),
-        @MojoParameter(name = "version", value = "1.0-SNAPSHOT"),
-        @MojoParameter(name = "packaging", value = "jar"),
-        @MojoParameter(
-                name = "file",
-                value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar"),
-        @MojoParameter(name = "pomFile", value = "${project.basedir}/src/test/resources/unit/pom.xml")
-    })
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    @MojoParameter(name = "pomFile", value = "${project.basedir}/src/test/resources/unit/pom.xml")
     public void testInstallFileWithPomFile(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
@@ -265,13 +252,11 @@ public class InstallFileMojoTest {
 
     @Test
     @InjectMojo(goal = "install-file")
-    @MojoParameters({
-        @MojoParameter(name = "groupId", value = "org.apache.maven.test"),
-        @MojoParameter(name = "artifactId", value = "maven-install-file-test"),
-        @MojoParameter(name = "version", value = "1.0-SNAPSHOT"),
-        @MojoParameter(name = "packaging", value = "pom"),
-        @MojoParameter(name = "file", value = "${project.basedir}/target/test-classes/unit/pom.xml")
-    })
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "pom")
+    @MojoParameter(name = "file", value = "${project.basedir}/target/test-classes/unit/pom.xml")
     public void testInstallFileWithPomAsPackaging(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
@@ -288,16 +273,14 @@ public class InstallFileMojoTest {
 
     @Test
     @InjectMojo(goal = "install-file")
-    @MojoParameters({
-        @MojoParameter(name = "groupId", value = "org.apache.maven.test"),
-        @MojoParameter(name = "artifactId", value = "maven-install-file-test"),
-        @MojoParameter(name = "version", value = "1.0-SNAPSHOT"),
-        @MojoParameter(name = "packaging", value = "jar"),
-        @MojoParameter(
-                name = "file",
-                value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar"),
-        @MojoParameter(name = "pomFile", value = "${project.basedir}/target/test-classes/unit/pom.xml")
-    })
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    @MojoParameter(name = "pomFile", value = "${project.basedir}/target/test-classes/unit/pom.xml")
     public void testInstallFile(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
