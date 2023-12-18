@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-plugins</artifactId>
-    <version>39</version>
+    <version>41</version>
     <relativePath />
   </parent>
 
@@ -80,13 +80,13 @@
 
     <!-- plugin versions used in IT tests -->
     <mavenAntrunPluginVersion>3.1.0</mavenAntrunPluginVersion>
-    <mavenCompilerPluginVersion>3.10.1</mavenCompilerPluginVersion>
+    <mavenCompilerPluginVersion>3.11.0</mavenCompilerPluginVersion>
     <mavenEnforcerPluginVersion>3.1.0</mavenEnforcerPluginVersion>
     <mavenJarPluginVersion>3.3.0</mavenJarPluginVersion>
-    <mavenPluginPluginVersion>3.7.0</mavenPluginPluginVersion>
+    <mavenPluginPluginVersion>3.10.2</mavenPluginPluginVersion>
     <mavenResourcesPluginVersion>3.3.0</mavenResourcesPluginVersion>
     <mavenSourcePluginVersion>3.2.1</mavenSourcePluginVersion>
-    <mavenSurefirePluginVersion>3.0.0-M7</mavenSurefirePluginVersion>
+    <mavenSurefirePluginVersion>3.2.3</mavenSurefirePluginVersion>
 
     <project.build.outputTimestamp>2023-03-21T14:31:18Z</project.build.outputTimestamp>
   </properties>
@@ -133,6 +133,12 @@
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
       <artifactId>plexus-utils</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-xml</artifactId>
+      <version>4.0.3</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- dependencies to annotations -->
