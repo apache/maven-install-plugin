@@ -195,8 +195,7 @@ public class InstallMojo extends AbstractMojo {
         // jar project: pomArtifact and projectArtifact are DIFFERENT
         // incomplete project: is not pom project and projectArtifact has no file
 
-        // we must compare coordinates ONLY (as projectArtifact may not have file set, and Artifact.equals factors in
-        // file)
+        // we must compare coordinates ONLY (as projectArtifact may not have file, and Artifact.equals factors it in)
         boolean pomArtifactIsMainArtifact = ArtifactIdUtils.equalsId(pomArtifact, projectArtifact);
         if (pomArtifactIsMainArtifact) {
             projectArtifact = null;
