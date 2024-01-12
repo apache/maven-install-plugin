@@ -39,6 +39,9 @@ import org.apache.maven.project.ProjectBuildingRequest;
 import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.internal.impl.DefaultLocalPathComposer;
+import org.eclipse.aether.internal.impl.DefaultLocalPathPrefixComposerFactory;
+import org.eclipse.aether.internal.impl.DefaultTrackingFileManager;
 import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
@@ -84,10 +87,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
 
         artifact = (InstallArtifactStub) project.getArtifact();
 
@@ -120,10 +124,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
 
         List<Artifact> attachedArtifacts = project.getAttachedArtifacts();
 
@@ -164,10 +169,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
 
         artifact = (InstallArtifactStub) project.getArtifact();
 
@@ -190,10 +196,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
 
         artifact = (InstallArtifactStub) project.getArtifact();
 
@@ -223,14 +230,52 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
 
         String packaging = project.getPackaging();
 
         assertEquals("pom", packaging);
+
+        artifact = (InstallArtifactStub) project.getArtifact();
+
+        mojo.execute();
+
+        String groupId = dotToSlashReplacer(artifact.getGroupId());
+
+        File installedArtifact = new File(
+                getBasedir(),
+                LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
+                        + artifact.getArtifactId() + "-" + artifact.getVersion() + "." + "pom");
+
+        assertTrue(installedArtifact.exists());
+
+        assertEquals(4, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+    }
+
+    public void testInstallIfPackagingIsBom() throws Exception {
+        File testPom = new File(
+                getBasedir(), "target/test-classes/unit/basic-install-test-packaging-bom/" + "plugin-config.xml");
+
+        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
+
+        assertNotNull(mojo);
+
+        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
+        updateMavenProject(project);
+
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
+        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
+        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
+
+        String packaging = project.getPackaging();
+
+        assertEquals("bom", packaging);
 
         artifact = (InstallArtifactStub) project.getArtifact();
 
@@ -261,10 +306,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenSession mavenSession = createMavenSession();
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", mavenSession);
 
         artifact = (InstallArtifactStub) project.getArtifact();
 
@@ -308,10 +354,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
         setVariableValueToObject(mojo, "skip", Boolean.TRUE);
 
         artifact = (InstallArtifactStub) project.getArtifact();
@@ -341,7 +388,10 @@ public class InstallMojoTest extends AbstractMojoTestCase {
     private MavenSession createMavenSession() throws NoLocalRepositoryManagerException {
         MavenSession session = mock(MavenSession.class);
         DefaultRepositorySystemSession repositorySession = new DefaultRepositorySystemSession();
-        repositorySession.setLocalRepositoryManager(new EnhancedLocalRepositoryManagerFactory()
+        repositorySession.setLocalRepositoryManager(new EnhancedLocalRepositoryManagerFactory(
+                        new DefaultLocalPathComposer(),
+                        new DefaultTrackingFileManager(),
+                        new DefaultLocalPathPrefixComposerFactory())
                 .newInstance(repositorySession, new LocalRepository(LOCAL_REPO)));
         ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
         buildingRequest.setRepositorySession(repositorySession);
