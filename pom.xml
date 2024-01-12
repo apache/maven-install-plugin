@@ -72,7 +72,7 @@
 
   <properties>
     <javaVersion>8</javaVersion>
-    <mavenVersion>4.0.0-alpha-11-SNAPSHOT</mavenVersion>
+    <mavenVersion>4.0.0-alpha-12</mavenVersion>
     <!-- Maven bound -->
     <slf4jVersion>1.7.5</slf4jVersion>
 
