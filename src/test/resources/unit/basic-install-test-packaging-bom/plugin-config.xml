@@ -23,7 +23,7 @@ under the License.
         <artifactId>maven-install-plugin</artifactId>
         <configuration>
           <project implementation="org.apache.maven.plugin.testing.stubs.MavenProjectStub">
-            <file>${basedir}/src/test/resources/unit/basic-install-test-packaging-pom/plugin-config.xml</file>
+            <file>${basedir}/src/test/resources/unit/basic-install-test-packaging-bom/plugin-config.xml</file>
             <packaging>bom</packaging>
             <artifact implementation="org.apache.maven.plugins.install.stubs.InstallBomArtifactStub"/>
             <attachedArtifacts/>
