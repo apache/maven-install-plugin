@@ -87,10 +87,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
 
         artifact = (InstallArtifactStub) project.getArtifact();
 
@@ -123,10 +124,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
 
         List<Artifact> attachedArtifacts = project.getAttachedArtifacts();
 
@@ -167,10 +169,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
 
         artifact = (InstallArtifactStub) project.getArtifact();
 
@@ -193,10 +196,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
 
         artifact = (InstallArtifactStub) project.getArtifact();
 
@@ -226,10 +230,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
 
         String packaging = project.getPackaging();
 
@@ -264,10 +269,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenSession mavenSession = createMavenSession();
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", mavenSession);
 
         artifact = (InstallArtifactStub) project.getArtifact();
 
@@ -311,10 +317,11 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
         updateMavenProject(project);
 
+        MavenSession session = createMavenSession();
+        session.setProjects(Collections.singletonList(project));
+        setVariableValueToObject(mojo, "session", session);
         setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
         setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "reactorProjects", Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", createMavenSession());
         setVariableValueToObject(mojo, "skip", Boolean.TRUE);
 
         artifact = (InstallArtifactStub) project.getArtifact();

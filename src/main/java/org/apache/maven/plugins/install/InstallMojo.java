@@ -38,8 +38,10 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.artifact.ProjectArtifact;
 import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
+import org.eclipse.aether.util.artifact.ArtifactIdUtils;
 
 /**
  * Installs the project's main artifact, and any other artifacts attached by other plugins in the lifecycle, to the
@@ -52,14 +54,11 @@ public class InstallMojo extends AbstractMojo {
     @Component
     private RepositorySystem repositorySystem;
 
-    @Parameter(defaultValue = "${session}", required = true, readonly = true)
+    @Component
     private MavenSession session;
 
-    @Parameter(defaultValue = "${project}", readonly = true, required = true)
+    @Component
     private MavenProject project;
-
-    @Parameter(defaultValue = "${reactorProjects}", required = true, readonly = true)
-    private List<MavenProject> reactorProjects;
 
     @Parameter(defaultValue = "${plugin}", required = true, readonly = true)
     private PluginDescriptor pluginDescriptor;
@@ -157,7 +156,9 @@ public class InstallMojo extends AbstractMojo {
             rp -> hasExecution(rp.getPlugin("org.apache.maven.plugins:maven-install-plugin"));
 
     private List<MavenProject> getAllProjectsUsingPlugin() {
-        return reactorProjects.stream().filter(hasMavenInstallPluginExecution).collect(Collectors.toList());
+        return session.getProjects().stream()
+                .filter(hasMavenInstallPluginExecution)
+                .collect(Collectors.toList());
     }
 
     private final Predicate<PluginExecution> havingGoals = pe -> !pe.getGoals().isEmpty();
@@ -185,16 +186,33 @@ public class InstallMojo extends AbstractMojo {
      * @throws MojoExecutionException if project is badly set up.
      */
     private void processProject(MavenProject project, InstallRequest request) throws MojoExecutionException {
-        if (isFile(project.getFile())) {
-            request.addArtifact(RepositoryUtils.toArtifact(new ProjectArtifact(project)));
+        // always exists, as project exists
+        Artifact pomArtifact = RepositoryUtils.toArtifact(new ProjectArtifact(project));
+        // always exists, but at "init" is w/o file (packaging plugin assigns file to this when packaged)
+        Artifact projectArtifact = RepositoryUtils.toArtifact(project.getArtifact());
+
+        // pom project: pomArtifact and projectArtifact are SAME
+        // jar project: pomArtifact and projectArtifact are DIFFERENT
+        // incomplete project: is not pom project and projectArtifact has no file
+
+        // we must compare coordinates ONLY (as projectArtifact may not have file set, and Artifact.equals factors in
+        // file)
+        boolean pomArtifactIsMainArtifact = ArtifactIdUtils.equalsId(pomArtifact, projectArtifact);
+        if (pomArtifactIsMainArtifact) {
+            projectArtifact = null;
+        }
+        // is not packaged, is "incomplete"
+        boolean isIncomplete = projectArtifact != null && !isFile(projectArtifact.getFile());
+
+        if (isFile(pomArtifact.getFile())) {
+            request.addArtifact(pomArtifact);
         } else {
             throw new MojoExecutionException("The project POM could not be attached");
         }
 
-        if (!"pom".equals(project.getPackaging())) {
-            org.apache.maven.artifact.Artifact mavenMainArtifact = project.getArtifact();
-            if (isFile(mavenMainArtifact.getFile())) {
-                request.addArtifact(RepositoryUtils.toArtifact(mavenMainArtifact));
+        if (projectArtifact != null) {
+            if (!isIncomplete) {
+                request.addArtifact(projectArtifact);
             } else if (!project.getAttachedArtifacts().isEmpty()) {
                 if (allowIncompleteProjects) {
                     getLog().warn("");
