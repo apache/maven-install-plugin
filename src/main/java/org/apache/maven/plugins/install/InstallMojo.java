@@ -54,10 +54,10 @@ public class InstallMojo extends AbstractMojo {
     @Component
     private RepositorySystem repositorySystem;
 
-    @Component
+    @Parameter(defaultValue = "${session}", required = true, readonly = true)
     private MavenSession session;
 
-    @Component
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private MavenProject project;
 
     @Parameter(defaultValue = "${plugin}", required = true, readonly = true)
