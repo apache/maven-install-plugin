@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-plugins</artifactId>
-    <version>39</version>
+    <version>41</version>
     <relativePath />
   </parent>
 
@@ -46,7 +46,7 @@
   </contributors>
 
   <prerequisites>
-    <maven>${mavenVersion}</maven>
+    <maven>3.6.3</maven>
   </prerequisites>
 
   <scm>
@@ -72,21 +72,21 @@
 
   <properties>
     <javaVersion>8</javaVersion>
-    <mavenVersion>3.2.5</mavenVersion>
+    <mavenVersion>3.9.6</mavenVersion>
     <!-- Maven bound -->
-    <aetherVersion>1.0.0.v20140518</aetherVersion>
+    <resolverVersion>1.9.18</resolverVersion>
     <!-- Maven bound -->
-    <slf4jVersion>1.7.5</slf4jVersion>
+    <slf4jVersion>1.7.36</slf4jVersion>
 
     <!-- plugin versions used in IT tests -->
     <mavenAntrunPluginVersion>3.1.0</mavenAntrunPluginVersion>
-    <mavenCompilerPluginVersion>3.10.1</mavenCompilerPluginVersion>
-    <mavenEnforcerPluginVersion>3.1.0</mavenEnforcerPluginVersion>
+    <mavenCompilerPluginVersion>3.12.1</mavenCompilerPluginVersion>
+    <mavenEnforcerPluginVersion>3.4.1</mavenEnforcerPluginVersion>
     <mavenJarPluginVersion>3.3.0</mavenJarPluginVersion>
-    <mavenPluginPluginVersion>3.7.0</mavenPluginPluginVersion>
+    <mavenPluginPluginVersion>3.11.0</mavenPluginPluginVersion>
     <mavenResourcesPluginVersion>3.3.0</mavenResourcesPluginVersion>
     <mavenSourcePluginVersion>3.2.1</mavenSourcePluginVersion>
-    <mavenSurefirePluginVersion>3.0.0-M7</mavenSurefirePluginVersion>
+    <mavenSurefirePluginVersion>3.2.5</mavenSurefirePluginVersion>
 
     <project.build.outputTimestamp>2023-03-21T14:31:18Z</project.build.outputTimestamp>
   </properties>
@@ -118,21 +118,25 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-api</artifactId>
-      <version>${aetherVersion}</version>
+      <groupId>org.apache.maven.resolver</groupId>
+      <artifactId>maven-resolver-api</artifactId>
+      <version>${resolverVersion}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-util</artifactId>
-      <version>${aetherVersion}</version>
+      <groupId>org.apache.maven.resolver</groupId>
+      <artifactId>maven-resolver-util</artifactId>
+      <version>${resolverVersion}</version>
       <!-- To work in Maven versions older than 3.9.0 -->
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.codehaus.plexus</groupId>
       <artifactId>plexus-utils</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-xml</artifactId>
     </dependency>
 
     <!-- dependencies to annotations -->
@@ -180,12 +184,25 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-impl</artifactId>
-      <version>${aetherVersion}</version>
+      <groupId>org.apache.maven.resolver</groupId>
+      <artifactId>maven-resolver-impl</artifactId>
+      <version>${resolverVersion}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <proc>none</proc>
+          <showDeprecation>true</showDeprecation>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <profiles>
     <profile>

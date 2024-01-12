@@ -30,6 +30,9 @@ import org.apache.maven.project.ProjectBuildingRequest;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.xml.XmlStreamReader;
 import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.internal.impl.DefaultLocalPathComposer;
+import org.eclipse.aether.internal.impl.DefaultLocalPathPrefixComposerFactory;
+import org.eclipse.aether.internal.impl.DefaultTrackingFileManager;
 import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
@@ -341,7 +344,10 @@ public class InstallFileMojoTest extends AbstractMojoTestCase {
     private MavenSession createMavenSession(String localRepositoryBaseDir) throws NoLocalRepositoryManagerException {
         MavenSession session = mock(MavenSession.class);
         DefaultRepositorySystemSession repositorySession = new DefaultRepositorySystemSession();
-        repositorySession.setLocalRepositoryManager(new EnhancedLocalRepositoryManagerFactory()
+        repositorySession.setLocalRepositoryManager(new EnhancedLocalRepositoryManagerFactory(
+                        new DefaultLocalPathComposer(),
+                        new DefaultTrackingFileManager(),
+                        new DefaultLocalPathPrefixComposerFactory())
                 .newInstance(repositorySession, new LocalRepository(localRepositoryBaseDir)));
         ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
         buildingRequest.setRepositorySession(repositorySession);

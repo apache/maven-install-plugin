@@ -67,7 +67,7 @@ import static java.util.Objects.nonNull;
  */
 @Mojo(name = "install-file", requiresProject = false, aggregator = true, threadSafe = true)
 public class InstallFileMojo extends AbstractMojo {
-    private static final String LS = System.getProperty("line.separator");
+    private static final String LS = System.lineSeparator();
 
     @Component
     private RepositorySystem repositorySystem;
@@ -384,11 +384,11 @@ public class InstallFileMojo extends AbstractMojo {
     private File generatePomFile() throws MojoExecutionException {
         Model model = generateModel();
         try {
-            File tempPomFile = File.createTempFile("mvninstall", ".pom");
+            Path tempPomFile = Files.createTempFile("mvninstall", ".pom");
 
-            try (OutputStream writer = Files.newOutputStream(tempPomFile.toPath())) {
+            try (OutputStream writer = Files.newOutputStream(tempPomFile)) {
                 new MavenXpp3Writer().write(writer, model);
-                return tempPomFile;
+                return tempPomFile.toFile();
             }
         } catch (IOException e) {
             throw new MojoExecutionException("Error writing temporary POM file: " + e.getMessage(), e);

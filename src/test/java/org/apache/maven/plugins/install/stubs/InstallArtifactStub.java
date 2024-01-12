@@ -74,7 +74,7 @@ public class InstallArtifactStub extends ArtifactStub {
 
     public void addMetadata(ArtifactMetadata metadata) {
         if (metadataMap == null) {
-            metadataMap = new HashMap<Object, ArtifactMetadata>();
+            metadataMap = new HashMap<>();
         }
 
         ArtifactMetadata m = metadataMap.get(metadata.getKey());
@@ -85,8 +85,8 @@ public class InstallArtifactStub extends ArtifactStub {
         }
     }
 
-    public Collection getMetadataList() {
-        return metadataMap == null ? Collections.EMPTY_LIST : metadataMap.values();
+    public Collection<ArtifactMetadata> getMetadataList() {
+        return metadataMap == null ? Collections.emptyList() : metadataMap.values();
     }
 
     public boolean isRelease() {
