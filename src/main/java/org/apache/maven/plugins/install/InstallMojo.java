@@ -207,7 +207,8 @@ public class InstallMojo extends AbstractMojo {
         if (isFile(pomArtifact.getFile())) {
             request.addArtifact(pomArtifact);
         } else {
-            throw new MojoExecutionException("The project POM could not be attached");
+            throw new MojoExecutionException(
+                    "The POM for project " + project.getArtifactId() + " could not be attached");
         }
 
         // is not packaged, is "incomplete"
@@ -218,18 +219,19 @@ public class InstallMojo extends AbstractMojo {
             } else if (!project.getAttachedArtifacts().isEmpty()) {
                 if (allowIncompleteProjects) {
                     getLog().warn("");
-                    getLog().warn("The packaging plugin for this project did not assign");
+                    getLog().warn("The packaging plugin for project " + project.getArtifactId() + " did not assign");
                     getLog().warn("a main file to the project but it has attachments. Change packaging to 'pom'.");
                     getLog().warn("");
                     getLog().warn("Incomplete projects like this will fail in future Maven versions!");
                     getLog().warn("");
                 } else {
-                    throw new MojoExecutionException("The packaging plugin for this project did not assign "
-                            + "a main file to the project but it has attachments. Change packaging to 'pom'.");
+                    throw new MojoExecutionException("The packaging plugin for project " + project.getArtifactId()
+                            + " did not assign a main file to the project but it has attachments. Change packaging"
+                            + " to 'pom'.");
                 }
             } else {
-                throw new MojoExecutionException(
-                        "The packaging for this project did not assign a file to the build artifact");
+                throw new MojoExecutionException("The packaging plugin for project " + project.getArtifactId()
+                        + " did not assign a file to the build artifact");
             }
         }
 
