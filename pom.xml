@@ -28,7 +28,7 @@
   </parent>
 
   <artifactId>maven-install-plugin</artifactId>
-  <version>3.1.2</version>
+  <version>3.1.3-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <name>Apache Maven Install Plugin</name>
@@ -52,7 +52,7 @@
   <scm>
     <connection>scm:git:https://gitbox.apache.org/repos/asf/maven-install-plugin.git</connection>
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/maven-install-plugin.git</developerConnection>
-    <tag>maven-install-plugin-3.1.2</tag>
+    <tag>HEAD</tag>
     <url>https://github.com/apache/maven-install-plugin/tree/${project.scm.tag}</url>
   </scm>
   <issueManagement>
@@ -88,7 +88,7 @@
     <mavenSourcePluginVersion>${version.maven-source-plugin}</mavenSourcePluginVersion>
     <mavenSurefirePluginVersion>${version.maven-surefire}</mavenSurefirePluginVersion>
 
-    <project.build.outputTimestamp>2024-04-26T10:22:49Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2024-04-26T10:23:20Z</project.build.outputTimestamp>
   </properties>
 
   <dependencies>
