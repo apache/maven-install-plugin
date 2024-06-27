@@ -197,7 +197,9 @@ public class InstallMojo extends AbstractMojo {
 
         // we must compare coordinates ONLY (as projectArtifact may not have file, and Artifact.equals factors it in)
         // BUT if projectArtifact has file set, use that one
-        if (ArtifactIdUtils.equalsId(pomArtifact, projectArtifact)) {
+        if ("pom".equals(project.getPackaging())) {
+            projectArtifact = null;
+        } else if (ArtifactIdUtils.equalsId(pomArtifact, projectArtifact)) {
             if (isFile(projectArtifact.getFile())) {
                 pomArtifact = projectArtifact;
             }
