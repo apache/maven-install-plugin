@@ -74,7 +74,7 @@
     <javaVersion>17</javaVersion>
     <mavenVersion>4.0.0-beta-3</mavenVersion>
     <!-- Maven bound -->
-    <slf4jVersion>2.0.13</slf4jVersion>
+    <slf4jVersion>2.0.16</slf4jVersion>
 
     <!-- plugin versions used in IT tests -->
     <guiceVersion>6.0.0</guiceVersion>
