@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -57,6 +58,8 @@ import org.eclipse.aether.installation.InstallationException;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.util.artifact.SubArtifact;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Objects.isNull;
 
@@ -68,6 +71,7 @@ import static java.util.Objects.isNull;
 @Mojo(name = "install-file", requiresProject = false, aggregator = true, threadSafe = true)
 public class InstallFileMojo extends AbstractMojo {
     private static final String LS = System.lineSeparator();
+    private final Logger log = LoggerFactory.getLogger(InstallFileMojo.class);
 
     @Component
     private RepositorySystem repositorySystem;
@@ -178,7 +182,7 @@ public class InstallFileMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (!file.exists()) {
             String message = "The specified file '" + file.getPath() + "' does not exist";
-            getLog().error(message);
+            log.error(message);
             throw new MojoFailureException(message);
         }
 
@@ -198,8 +202,7 @@ public class InstallFileMojo extends AbstractMojo {
                     newSession, new LocalRepository(localRepositoryPath, contentType));
             newSession.setLocalRepositoryManager(localRepositoryManager);
             repositorySystemSession = newSession;
-            getLog().debug("localRepoPath: "
-                    + localRepositoryManager.getRepository().getBasedir());
+            log.debug("localRepoPath: " + localRepositoryManager.getRepository().getBasedir());
         }
 
         File temporaryPom = null;
@@ -208,7 +211,7 @@ public class InstallFileMojo extends AbstractMojo {
             temporaryPom = readingPomFromJarFile();
             if (!Boolean.TRUE.equals(generatePom)) {
                 pomFile = temporaryPom;
-                getLog().debug("Using JAR embedded POM as pomFile");
+                log.debug("Using JAR embedded POM as pomFile");
             }
         } else {
             processModel(readModel(pomFile));
@@ -240,6 +243,12 @@ public class InstallFileMojo extends AbstractMojo {
                 mainArtifactExtension = packaging;
             }
         }
+        if (extension != null && !Objects.equals(extension, mainArtifactExtension)) {
+            log.warn(
+                    "Main artifact extension should be '{}' but was overridden to '{}'",
+                    mainArtifactExtension,
+                    extension);
+        }
         Artifact mainArtifact = new DefaultArtifact(
                         groupId, artifactId, classifier, extension != null ? extension : mainArtifactExtension, version)
                 .setFile(file);
@@ -257,10 +266,10 @@ public class InstallFileMojo extends AbstractMojo {
             if (isNull(pomFile)) {
                 if (Boolean.TRUE.equals(generatePom) || (generatePom == null && !pomLocalFile.exists())) {
                     temporaryPom = generatePomFile();
-                    getLog().debug("Installing generated POM");
+                    log.debug("Installing generated POM");
                     installRequest.addArtifact(new SubArtifact(mainArtifact, "", "pom", temporaryPom));
                 } else if (generatePom == null) {
-                    getLog().debug("Skipping installation of generated POM, already present in local repository");
+                    log.debug("Skipping installation of generated POM, already present in local repository");
                 }
             } else {
                 installRequest.addArtifact(new SubArtifact(mainArtifact, "", "pom", pomFile));
@@ -305,7 +314,7 @@ public class InstallFileMojo extends AbstractMojo {
 
             if (isNull(pomEntry)) {
                 // This means there is no entry which matches the "pom.xml"...(or in other words: not packaged by Maven)
-                getLog().info("pom.xml not found in " + file.getName());
+                log.info("pom.xml not found in " + file.getName());
                 return null;
             }
 
@@ -313,7 +322,7 @@ public class InstallFileMojo extends AbstractMojo {
 
             Files.copy(jarFile.getInputStream(pomEntry), tempPomFile, StandardCopyOption.REPLACE_EXISTING);
 
-            getLog().debug("Loading " + pomEntry.getName());
+            log.debug("Loading " + pomEntry.getName());
             processModel(readModel(tempPomFile.toFile()));
             return tempPomFile.toFile();
 
