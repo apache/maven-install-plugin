@@ -43,6 +43,7 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.codehaus.plexus.util.FileUtils;
+import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -58,7 +59,6 @@ import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.util.artifact.SubArtifact;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 
 /**
  * Installs a file in the local repository.
@@ -111,6 +111,15 @@ public class InstallFileMojo extends AbstractMojo {
      */
     @Parameter(property = "classifier")
     private String classifier;
+
+    /**
+     * Extension of the artifact to be installed. If set, will override plugin own logic to detect extension. If not set,
+     * as Maven expected, packaging determines the artifact extension.
+     *
+     * @since 3.1.3
+     */
+    @Parameter(property = "extension")
+    private String extension;
 
     /**
      * The file to be installed in the local repository.
@@ -216,16 +225,23 @@ public class InstallFileMojo extends AbstractMojo {
 
         InstallRequest installRequest = new InstallRequest();
 
-        boolean isFilePom = isNull(classifier) && IS_POM_PACKAGING.test(packaging);
-        if (!isFilePom) {
+        String mainArtifactExtension;
+        if (classifier == null && "pom".equals(packaging)) {
+            mainArtifactExtension = "pom";
+        } else {
             ArtifactType artifactType =
-                    repositorySystemSession.getArtifactTypeRegistry().get(packaging);
-            if (nonNull(artifactType) && IS_EMPTY.test(classifier) && !IS_EMPTY.test(artifactType.getClassifier())) {
-                classifier = artifactType.getClassifier();
+                    session.getRepositorySession().getArtifactTypeRegistry().get(packaging);
+            if (artifactType != null) {
+                if (StringUtils.isEmpty(classifier) && !StringUtils.isEmpty(artifactType.getClassifier())) {
+                    classifier = artifactType.getClassifier();
+                }
+                mainArtifactExtension = artifactType.getExtension();
+            } else {
+                mainArtifactExtension = packaging;
             }
         }
         Artifact mainArtifact = new DefaultArtifact(
-                        groupId, artifactId, classifier, isFilePom ? "pom" : getExtension(file), version)
+                        groupId, artifactId, classifier, extension != null ? extension : mainArtifactExtension, version)
                 .setFile(file);
         installRequest.addArtifact(mainArtifact);
 

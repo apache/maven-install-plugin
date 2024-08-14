@@ -24,7 +24,7 @@ String[] paths =
 {
     "org/apache/maven/its/install/121/test-java-source/maven-metadata-local.xml",
     "org/apache/maven/its/install/121/test-java-source/1.0/test-java-source-1.0.pom",
-    "org/apache/maven/its/install/121/test-java-source/1.0/test-java-source-1.0-sources.jar",
+    "org/apache/maven/its/install/121/test-java-source/1.0/test-java-source-1.0-sources.jar", // packaging java-source IS in core
 };
 
 for ( String path : paths )
