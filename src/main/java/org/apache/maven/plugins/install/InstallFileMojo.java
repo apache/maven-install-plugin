@@ -71,7 +71,7 @@ import static java.util.Objects.isNull;
 @Mojo(name = "install-file", requiresProject = false, aggregator = true, threadSafe = true)
 public class InstallFileMojo extends AbstractMojo {
     private static final String LS = System.lineSeparator();
-    private final Logger log = LoggerFactory.getLogger(InstallFileMojo.class);
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Component
     private RepositorySystem repositorySystem;
@@ -202,7 +202,7 @@ public class InstallFileMojo extends AbstractMojo {
                     newSession, new LocalRepository(localRepositoryPath, contentType));
             newSession.setLocalRepositoryManager(localRepositoryManager);
             repositorySystemSession = newSession;
-            log.debug("localRepoPath: " + localRepositoryManager.getRepository().getBasedir());
+            log.debug("localRepoPath: {}", localRepositoryManager.getRepository().getBasedir());
         }
 
         File temporaryPom = null;
@@ -314,7 +314,7 @@ public class InstallFileMojo extends AbstractMojo {
 
             if (isNull(pomEntry)) {
                 // This means there is no entry which matches the "pom.xml"...(or in other words: not packaged by Maven)
-                log.info("pom.xml not found in " + file.getName());
+                log.info("pom.xml not found in {}", file.getName());
                 return null;
             }
 
@@ -322,7 +322,7 @@ public class InstallFileMojo extends AbstractMojo {
 
             Files.copy(jarFile.getInputStream(pomEntry), tempPomFile, StandardCopyOption.REPLACE_EXISTING);
 
-            log.debug("Loading " + pomEntry.getName());
+            log.debug("Loading {}", pomEntry.getName());
             processModel(readModel(tempPomFile.toFile()));
             return tempPomFile.toFile();
 
