@@ -202,7 +202,8 @@ public class InstallFileMojo extends AbstractMojo {
                     newSession, new LocalRepository(localRepositoryPath, contentType));
             newSession.setLocalRepositoryManager(localRepositoryManager);
             repositorySystemSession = newSession;
-            log.debug("localRepoPath: {}", localRepositoryManager.getRepository().getBasedir());
+            log.debug(
+                    "localRepoPath: {}", localRepositoryManager.getRepository().getBasedir());
         }
 
         File temporaryPom = null;
