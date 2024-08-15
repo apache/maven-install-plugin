@@ -24,7 +24,7 @@ String[] paths =
 {
     "org/apache/maven/its/install/121/maven-archetype/maven-metadata-local.xml",
     "org/apache/maven/its/install/121/maven-archetype/1.0/maven-archetype-1.0.pom",
-    "org/apache/maven/its/install/121/maven-archetype/1.0/maven-archetype-1.0.jar",
+    "org/apache/maven/its/install/121/maven-archetype/1.0/maven-archetype-1.0.jar",  // packaging maven-archetype is NOT in core! (explicitly set with -Dextension=jar)
 };
 
 for ( String path : paths )

@@ -24,7 +24,7 @@ String[] paths =
 {
     "org/apache/maven/its/install/121/maven-bundle/maven-metadata-local.xml",
     "org/apache/maven/its/install/121/maven-bundle/1.0/maven-bundle-1.0.pom",
-    "org/apache/maven/its/install/121/maven-bundle/1.0/maven-bundle-1.0.jar",
+    "org/apache/maven/its/install/121/maven-bundle/1.0/maven-bundle-1.0.jar", // packaging bundle is NOT in core! (explicitly set with -Dextension=jar)
 };
 
 for ( String path : paths )
