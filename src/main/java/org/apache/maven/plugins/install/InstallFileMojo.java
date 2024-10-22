@@ -207,9 +207,9 @@ public class InstallFileMojo implements org.apache.maven.api.plugin.Mojo {
         artifactManager.setPath(artifact, file);
         installableArtifacts.add(artifact);
 
+        ProducedArtifact pomArtifact = null;
         if (!isFilePom) {
-            ProducedArtifact pomArtifact =
-                    session.createProducedArtifact(groupId, artifactId, version, null, "pom", null);
+            pomArtifact = session.createProducedArtifact(groupId, artifactId, version, null, "pom", null);
             if (deployedPom != null) {
                 artifactManager.setPath(pomArtifact, deployedPom);
                 installableArtifacts.add(pomArtifact);
@@ -252,6 +252,9 @@ public class InstallFileMojo implements org.apache.maven.api.plugin.Mojo {
                     Files.deleteIfExists(temporaryPom);
                 } catch (IOException e) {
                     // ignore
+                }
+                if (pomArtifact != null) {
+                    artifactManager.setPath(pomArtifact, null);
                 }
             }
         }
