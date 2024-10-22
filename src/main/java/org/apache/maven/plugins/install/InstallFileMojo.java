@@ -33,6 +33,7 @@ import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
 import org.apache.maven.api.Artifact;
+import org.apache.maven.api.ProducedArtifact;
 import org.apache.maven.api.Session;
 import org.apache.maven.api.di.Inject;
 import org.apache.maven.api.model.Model;
@@ -194,7 +195,7 @@ public class InstallFileMojo implements org.apache.maven.api.plugin.Mojo {
         }
 
         boolean isFilePom = classifier == null && "pom".equals(packaging);
-        Artifact artifact = session.createArtifact(
+        ProducedArtifact artifact = session.createProducedArtifact(
                 groupId, artifactId, version, classifier, isFilePom ? "pom" : getExtension(file), packaging);
 
         if (file.equals(getLocalRepositoryFile(artifact))) {
@@ -207,7 +208,8 @@ public class InstallFileMojo implements org.apache.maven.api.plugin.Mojo {
         installableArtifacts.add(artifact);
 
         if (!isFilePom) {
-            Artifact pomArtifact = session.createArtifact(groupId, artifactId, version, null, "pom", null);
+            ProducedArtifact pomArtifact =
+                    session.createProducedArtifact(groupId, artifactId, version, null, "pom", null);
             if (deployedPom != null) {
                 artifactManager.setPath(pomArtifact, deployedPom);
                 installableArtifacts.add(pomArtifact);
@@ -226,13 +228,15 @@ public class InstallFileMojo implements org.apache.maven.api.plugin.Mojo {
         }
 
         if (sources != null) {
-            Artifact sourcesArtifact = session.createArtifact(groupId, artifactId, version, "sources", "jar", null);
+            ProducedArtifact sourcesArtifact =
+                    session.createProducedArtifact(groupId, artifactId, version, "sources", "jar", null);
             artifactManager.setPath(sourcesArtifact, sources);
             installableArtifacts.add(sourcesArtifact);
         }
 
         if (javadoc != null) {
-            Artifact javadocArtifact = session.createArtifact(groupId, artifactId, version, "javadoc", "jar", null);
+            ProducedArtifact javadocArtifact =
+                    session.createProducedArtifact(groupId, artifactId, version, "javadoc", "jar", null);
             artifactManager.setPath(javadocArtifact, javadoc);
             installableArtifacts.add(javadocArtifact);
         }
