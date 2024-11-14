@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
+import org.apache.maven.api.ProducedArtifact;
 import org.apache.maven.api.Project;
 import org.apache.maven.api.Session;
 import org.apache.maven.api.di.Inject;
@@ -179,8 +180,8 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
      */
     private ArtifactInstallerRequest processProject(Project project) {
         ProjectManager projectManager = getProjectManager();
-        Collection<Artifact> installables = projectManager.getAllArtifacts(project);
-        Collection<Artifact> attachedArtifacts = projectManager.getAttachedArtifacts(project);
+        Collection<ProducedArtifact> installables = projectManager.getAllArtifacts(project);
+        Collection<ProducedArtifact> attachedArtifacts = projectManager.getAttachedArtifacts(project);
 
         getArtifactManager().setPath(project.getPomArtifact(), project.getPomPath());
 
@@ -211,7 +212,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
             }
         }
 
-        return ArtifactInstallerRequest.build(session, installables);
+        return ArtifactInstallerRequest.build(session, (Collection) installables);
     }
 
     private boolean isValidPath(Artifact a) {

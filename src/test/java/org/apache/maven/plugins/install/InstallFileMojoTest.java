@@ -170,8 +170,8 @@ public class InstallFileMojoTest {
         Artifact pom = getArtifact(null, "pom");
         Artifact sources = getArtifact("sources", "jar");
         assertEquals(new HashSet<>(Arrays.asList(pom, sources)), artifacts);
-        // pom file does not exists, as it should have been deleted after the installation
-        assertFileNotExists(artifactManager.getPath(pom).get());
+        // pom file does not exist, as it should have been deleted after the installation
+        assertTrue(artifactManager.getPath(pom).isEmpty());
         assertFileExists(artifactManager.getPath(sources).get());
         assertEquals(
                 LOCAL_REPO,
