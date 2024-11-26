@@ -39,6 +39,7 @@ import org.apache.maven.api.di.Singleton;
 import org.apache.maven.api.plugin.Mojo;
 import org.apache.maven.api.plugin.MojoException;
 import org.apache.maven.api.plugin.testing.InjectMojo;
+import org.apache.maven.api.plugin.testing.MojoParameter;
 import org.apache.maven.api.plugin.testing.MojoTest;
 import org.apache.maven.api.plugin.testing.stubs.MojoExecutionStub;
 import org.apache.maven.api.plugin.testing.stubs.ProducedArtifactStub;
@@ -95,6 +96,7 @@ public class InstallMojoTest {
 
     @Test
     @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
     public void testBasicInstall(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         Project project = (Project) getVariableValueFromObject(mojo, "project");
@@ -115,6 +117,7 @@ public class InstallMojoTest {
 
     @Test
     @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
     public void testBasicInstallWithAttachedArtifacts(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         Project project = (Project) getVariableValueFromObject(mojo, "project");
@@ -145,7 +148,8 @@ public class InstallMojoTest {
         Project project = (Project) getVariableValueFromObject(mojo, "project");
         assertFalse(artifactManager.getPath(project.getMainArtifact().get()).isPresent());
 
-        assertThrows(MojoException.class, mojo::execute, "Did not throw mojo execution exception");
+        MojoException e = assertThrows(MojoException.class, mojo::execute, "Did not throw mojo execution exception");
+        assertEquals("The packaging for this project did not assign a file to the build artifact", e.getMessage());
     }
 
     @Test

@@ -20,6 +20,6 @@
 File buildLog = new File( basedir, 'build.log' )
 assert buildLog.exists()
 /* UNTIL MINSTALL-108 will be fixed the result
- * should not be <installAtEnd default-value="false">false</installAtEnd>
+ * should not be <installAtEnd default-value="true">false</installAtEnd>
  */
-assert buildLog.text.contains ( '<installAtEnd default-value="false">true</installAtEnd>')
+assert buildLog.text.contains ( '<installAtEnd default-value="true">true</installAtEnd>')
