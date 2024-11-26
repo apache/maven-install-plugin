@@ -67,7 +67,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
      *
      * @since 2.5
      */
-    @Parameter(property = "installAtEnd", defaultValue = "false")
+    @Parameter(property = "installAtEnd", defaultValue = "true")
     private boolean installAtEnd;
 
     /**
