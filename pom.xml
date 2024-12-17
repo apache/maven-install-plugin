@@ -78,7 +78,7 @@
 
     <!-- plugin versions used in IT tests -->
     <guiceVersion>6.0.0</guiceVersion>
-    <junitVersion>5.11.0</junitVersion>
+    <junitVersion>5.11.4</junitVersion>
     <mavenAntrunPluginVersion>3.1.0</mavenAntrunPluginVersion>
     <mavenCompilerPluginVersion>3.10.1</mavenCompilerPluginVersion>
     <mavenEnforcerPluginVersion>3.1.0</mavenEnforcerPluginVersion>
