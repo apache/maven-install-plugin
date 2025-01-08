@@ -43,7 +43,6 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.DefaultRepositoryCache;
@@ -441,18 +440,6 @@ public class InstallFileMojo extends AbstractMojo {
     }
 
     // these below should be shared (duplicated in m-install-p, m-deploy-p)
-
-    /**
-     * Specialization of {@link FileUtils#getExtension(String)} that honors various {@code tar.xxx} combinations.
-     */
-    private String getExtension(final File file) {
-        String filename = file.getName();
-        if (filename.contains(".tar.")) {
-            return "tar." + FileUtils.getExtension(filename);
-        } else {
-            return FileUtils.getExtension(filename);
-        }
-    }
 
     /**
      * Returns {@code true} if passed in string is "valid Maven ID" (groupId or artifactId).
