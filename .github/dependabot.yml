@@ -16,12 +16,24 @@
 #
 version: 2
 updates:
-- package-ecosystem: maven
-  directory: "/"
-  schedule:
-    interval: daily
-    time: '04:00'
-  open-pull-requests-limit: 10
-  ignore:
-    # Ignore Maven Core updates
-    - dependency-name: "org.apache.maven:*"
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "maven-install-plugin-3.x"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "maven-install-plugin-3.x"
