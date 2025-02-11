@@ -159,7 +159,7 @@ public class InstallFileMojo implements org.apache.maven.api.plugin.Mojo {
 
         Session session = this.session;
 
-        List<Artifact> installableArtifacts = new ArrayList<>();
+        List<ProducedArtifact> installableArtifacts = new ArrayList<>();
 
         // Override the default local repository
         if (localRepositoryPath != null) {

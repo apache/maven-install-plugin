@@ -26,10 +26,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
+import org.apache.maven.api.ProducedArtifact;
 import org.apache.maven.api.Project;
 import org.apache.maven.api.di.Inject;
 import org.apache.maven.api.di.Named;
@@ -105,12 +105,12 @@ public class InstallMojoTest {
         ArtifactInstallerRequest request = execute(mojo);
 
         assertNotNull(request);
-        Collection<Artifact> artifacts = request.getArtifacts();
+        Collection<ProducedArtifact> artifacts = request.getArtifacts();
         assertEquals(
                 Arrays.asList(
                         "org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT",
                         "org.apache.maven.test:maven-install-test:jar:1.0-SNAPSHOT"),
-                artifacts.stream().map(Artifact::key).collect(Collectors.toList()));
+                artifacts.stream().map(Artifact::key).toList());
     }
 
     @Test
@@ -129,13 +129,13 @@ public class InstallMojoTest {
         ArtifactInstallerRequest request = execute(mojo);
 
         assertNotNull(request);
-        Collection<Artifact> artifacts = request.getArtifacts();
+        Collection<ProducedArtifact> artifacts = request.getArtifacts();
         assertEquals(
                 Arrays.asList(
                         "org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT",
                         "org.apache.maven.test:maven-install-test:jar:1.0-SNAPSHOT",
                         "org.apache.maven.test:attached-artifact-test:jar:1.0-SNAPSHOT"),
-                artifacts.stream().map(Artifact::key).collect(Collectors.toList()));
+                artifacts.stream().map(Artifact::key).toList());
     }
 
     @Test

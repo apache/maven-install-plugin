@@ -72,7 +72,7 @@
 
   <properties>
     <javaVersion>17</javaVersion>
-    <mavenVersion>4.0.0-beta-5</mavenVersion>
+    <mavenVersion>4.0.0-rc-2</mavenVersion>
     <!-- Maven bound -->
     <slf4jVersion>2.0.13</slf4jVersion>
 
@@ -84,7 +84,7 @@
     <mavenEnforcerPluginVersion>3.1.0</mavenEnforcerPluginVersion>
     <mavenJarPluginVersion>3.3.0</mavenJarPluginVersion>
     <mavenPluginPluginVersion>4.0.0-beta-1</mavenPluginPluginVersion>
-    <mavenPluginTestingVersion>4.0.0-beta-2</mavenPluginTestingVersion>
+    <mavenPluginTestingVersion>4.0.0-beta-3</mavenPluginTestingVersion>
     <mavenResourcesPluginVersion>3.3.0</mavenResourcesPluginVersion>
     <mavenSourcePluginVersion>3.2.1</mavenSourcePluginVersion>
     <mavenSurefirePluginVersion>3.2.2</mavenSurefirePluginVersion>
@@ -128,7 +128,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
-      <artifactId>maven-api-meta</artifactId>
+      <artifactId>maven-api-annotations</artifactId>
       <version>${mavenVersion}</version>
       <scope>provided</scope>
     </dependency>
@@ -153,7 +153,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
-      <artifactId>maven-api-impl</artifactId>
+      <artifactId>maven-impl</artifactId>
       <version>${mavenVersion}</version>
       <scope>test</scope>
     </dependency>
