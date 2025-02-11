@@ -20,14 +20,14 @@ package org.apache.maven.plugins.install;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
+import org.apache.maven.api.ProducedArtifact;
 import org.apache.maven.api.Project;
 import org.apache.maven.api.Session;
 import org.apache.maven.api.Type;
@@ -95,10 +95,10 @@ public class InstallMojoPomPackagingTest {
         ArtifactInstallerRequest request = execute(mojo);
 
         assertNotNull(request);
-        Collection<Artifact> artifacts = request.getArtifacts();
+        Collection<ProducedArtifact> artifacts = request.getArtifacts();
         assertEquals(
-                Arrays.asList("org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT"),
-                artifacts.stream().map(Artifact::key).collect(Collectors.toList()));
+                List.of("org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT"),
+                artifacts.stream().map(Artifact::key).toList());
     }
 
     @Provides
