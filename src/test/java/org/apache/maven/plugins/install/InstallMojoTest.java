@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
+import org.apache.maven.api.ProducedArtifact;
 import org.apache.maven.api.Project;
 import org.apache.maven.api.di.Inject;
 import org.apache.maven.api.di.Named;
@@ -105,7 +106,7 @@ public class InstallMojoTest {
         ArtifactInstallerRequest request = execute(mojo);
 
         assertNotNull(request);
-        Collection<Artifact> artifacts = request.getArtifacts();
+        Collection<ProducedArtifact> artifacts = request.getArtifacts();
         assertEquals(
                 Arrays.asList(
                         "org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT",
@@ -129,7 +130,7 @@ public class InstallMojoTest {
         ArtifactInstallerRequest request = execute(mojo);
 
         assertNotNull(request);
-        Collection<Artifact> artifacts = request.getArtifacts();
+        Collection<ProducedArtifact> artifacts = request.getArtifacts();
         assertEquals(
                 Arrays.asList(
                         "org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT",
