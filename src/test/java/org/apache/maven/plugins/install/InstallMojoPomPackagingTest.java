@@ -37,6 +37,7 @@ import org.apache.maven.api.di.Provides;
 import org.apache.maven.api.di.Singleton;
 import org.apache.maven.api.plugin.Mojo;
 import org.apache.maven.api.plugin.testing.InjectMojo;
+import org.apache.maven.api.plugin.testing.MojoParameter;
 import org.apache.maven.api.plugin.testing.MojoTest;
 import org.apache.maven.api.plugin.testing.stubs.MojoExecutionStub;
 import org.apache.maven.api.plugin.testing.stubs.ProjectStub;
@@ -85,6 +86,7 @@ public class InstallMojoPomPackagingTest {
 
     @Test
     @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
     public void testInstallIfPackagingIsPom(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         Project project = (Project) getVariableValueFromObject(mojo, "project");
