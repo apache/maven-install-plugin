@@ -212,7 +212,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
             }
         }
 
-        return ArtifactInstallerRequest.build(session, (Collection) installables);
+        return ArtifactInstallerRequest.build(session, installables);
     }
 
     private boolean isValidPath(Artifact a) {
