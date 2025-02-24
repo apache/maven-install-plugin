@@ -112,7 +112,6 @@ public class InstallMojoPomPackagingTest {
         when(session.getArtifact(any()))
                 .thenAnswer(iom -> new org.apache.maven.internal.impl.DefaultArtifact(
                         session, iom.getArgument(0, org.eclipse.aether.artifact.Artifact.class)));
-        //        when(session.getMavenSession()).thenAnswer(iom -> new MavenSession(null, null, null));
         return session;
     }
 
@@ -127,16 +126,6 @@ public class InstallMojoPomPackagingTest {
         project.setArtifactId("maven-install-test");
         project.setVersion("1.0-SNAPSHOT");
         project.setPackaging("pom");
-        //        DefaultArtifact artifact = new DefaultArtifact(
-        //                "org.apache.maven.test",
-        //                "maven-install-test",
-        //                "1.0-SNAPSHOT",
-        //                null,
-        //                "pom",
-        //                null,
-        //                new DefaultArtifactHandlerStub("pom"));
-        //        project.setArtifact(artifact);
-        //        project.setAttachedArtifacts(new ArrayList<>());
         return project;
     }
 
