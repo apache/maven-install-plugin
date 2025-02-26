@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
@@ -205,18 +204,11 @@ public class InstallMojoTest {
         return Collections.emptyList();
     }
 
-    private <T> ArtifactInstallerRequest execute(Mojo mojo) {
-        return execute(mojo, null);
-    }
-
-    private ArtifactInstallerRequest execute(Mojo mojo, Consumer<ArtifactInstallerRequest> consumer) {
+    private ArtifactInstallerRequest execute(Mojo mojo) {
         AtomicReference<ArtifactInstallerRequest> request = new AtomicReference<>();
         doAnswer(iom -> {
                     ArtifactInstallerRequest req = iom.getArgument(0, ArtifactInstallerRequest.class);
                     request.set(req);
-                    if (consumer != null) {
-                        consumer.accept(req);
-                    }
                     return null;
                 })
                 .when(artifactInstaller)
