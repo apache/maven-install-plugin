@@ -57,12 +57,12 @@ public class InstallMojoTest extends AbstractMojoTestCase {
 
     InstallArtifactStub artifact;
 
-    private final String LOCAL_REPO = "target/local-repo/";
+    private final String localRepoTarget = "target/local-repo/";
 
     public void setUp() throws Exception {
         super.setUp();
 
-        FileUtils.deleteDirectory(new File(getBasedir() + "/" + LOCAL_REPO));
+        FileUtils.deleteDirectory(new File(getBasedir() + "/" + localRepoTarget));
     }
 
     public void testInstallTestEnvironment() throws Exception {
@@ -103,13 +103,14 @@ public class InstallMojoTest extends AbstractMojoTestCase {
 
         File installedArtifact = new File(
                 getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
+                localRepoTarget + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
                         + artifact.getArtifactId() + "-" + artifact.getVersion() + "."
                         + artifact.getArtifactHandler().getExtension());
 
         assertTrue(installedArtifact.exists());
 
-        assertEquals(5, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(
+                5, FileUtils.getFiles(new File(localRepoTarget), null, null).size());
     }
 
     public void testBasicInstallWithAttachedArtifacts() throws Exception {
@@ -145,14 +146,15 @@ public class InstallMojoTest extends AbstractMojoTestCase {
 
             File installedArtifact = new File(
                     getBasedir(),
-                    LOCAL_REPO + groupId + "/" + attachedArtifact.getArtifactId()
+                    localRepoTarget + groupId + "/" + attachedArtifact.getArtifactId()
                             + "/" + attachedArtifact.getVersion() + "/" + attachedArtifact.getArtifactId()
                             + "-" + attachedArtifact.getVersion() + "." + packaging);
 
             assertTrue(installedArtifact.getPath() + " does not exist", installedArtifact.exists());
         }
 
-        assertEquals(13, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(
+                13, FileUtils.getFiles(new File(localRepoTarget), null, null).size());
     }
 
     public void testNonPomInstallWithAttachedArtifactsOnly() throws Exception {
@@ -215,7 +217,8 @@ public class InstallMojoTest extends AbstractMojoTestCase {
 
         //        assertTrue( artifact.isRelease() );
 
-        assertEquals(5, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(
+                5, FileUtils.getFiles(new File(localRepoTarget), null, null).size());
     }
 
     public void testInstallIfArtifactFileIsNull() throws Exception {
@@ -250,7 +253,7 @@ public class InstallMojoTest extends AbstractMojoTestCase {
                     e.getMessage());
         }
 
-        assertFalse(new File(LOCAL_REPO).exists());
+        assertFalse(new File(localRepoTarget).exists());
     }
 
     public void testInstallIfProjectFileIsNull() throws Exception {
@@ -309,12 +312,13 @@ public class InstallMojoTest extends AbstractMojoTestCase {
 
         File installedArtifact = new File(
                 getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
+                localRepoTarget + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
                         + artifact.getArtifactId() + "-" + artifact.getVersion() + "." + "pom");
 
         assertTrue(installedArtifact.exists());
 
-        assertEquals(4, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(
+                4, FileUtils.getFiles(new File(localRepoTarget), null, null).size());
     }
 
     public void testInstallIfPackagingIsBom() throws Exception {
@@ -346,12 +350,13 @@ public class InstallMojoTest extends AbstractMojoTestCase {
 
         File installedArtifact = new File(
                 getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
+                localRepoTarget + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
                         + artifact.getArtifactId() + "-" + artifact.getVersion() + "." + "pom");
 
         assertTrue(installedArtifact.exists());
 
-        assertEquals(4, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(
+                4, FileUtils.getFiles(new File(localRepoTarget), null, null).size());
     }
 
     public void testBasicInstallAndCreate() throws Exception {
@@ -380,7 +385,7 @@ public class InstallMojoTest extends AbstractMojoTestCase {
         mojo.execute();
 
         File pom = new File(
-                new File(LOCAL_REPO),
+                new File(localRepoTarget),
                 mavenSession
                         .getRepositorySession()
                         .getLocalRepositoryManager()
@@ -391,14 +396,15 @@ public class InstallMojoTest extends AbstractMojoTestCase {
 
         String groupId = dotToSlashReplacer(artifact.getGroupId());
         String packaging = project.getPackaging();
-        String localPath = getBasedir() + "/" + LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/"
+        String localPath = getBasedir() + "/" + localRepoTarget + groupId + "/" + artifact.getArtifactId() + "/"
                 + artifact.getVersion() + "/" + artifact.getArtifactId() + "-" + artifact.getVersion();
 
         File installedArtifact = new File(localPath + "." + packaging);
 
         assertTrue(installedArtifact.exists());
 
-        assertEquals(5, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(
+                5, FileUtils.getFiles(new File(localRepoTarget), null, null).size());
     }
 
     public void testSkip() throws Exception {
@@ -434,12 +440,12 @@ public class InstallMojoTest extends AbstractMojoTestCase {
 
         File installedArtifact = new File(
                 getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
+                localRepoTarget + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
                         + artifact.getArtifactId() + "-" + artifact.getVersion() + "." + packaging);
 
         assertFalse(installedArtifact.exists());
 
-        assertFalse(new File(LOCAL_REPO).exists());
+        assertFalse(new File(localRepoTarget).exists());
     }
 
     private String dotToSlashReplacer(String parameter) {
@@ -453,7 +459,7 @@ public class InstallMojoTest extends AbstractMojoTestCase {
                         new DefaultLocalPathComposer(),
                         new DefaultTrackingFileManager(),
                         new DefaultLocalPathPrefixComposerFactory())
-                .newInstance(repositorySession, new LocalRepository(LOCAL_REPO)));
+                .newInstance(repositorySession, new LocalRepository(localRepoTarget)));
         ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
         buildingRequest.setRepositorySession(repositorySession);
         when(session.getProjectBuildingRequest()).thenReturn(buildingRequest);
