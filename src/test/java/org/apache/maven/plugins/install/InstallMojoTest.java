@@ -48,7 +48,7 @@ import org.apache.maven.api.services.ArtifactInstaller;
 import org.apache.maven.api.services.ArtifactInstallerRequest;
 import org.apache.maven.api.services.ArtifactManager;
 import org.apache.maven.api.services.ProjectManager;
-import org.apache.maven.internal.impl.InternalSession;
+import org.apache.maven.impl.InternalSession;
 import org.codehaus.plexus.util.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -168,7 +168,7 @@ public class InstallMojoTest {
     private InternalSession createSession() {
         InternalSession session = SessionMock.getMockSession(LOCAL_REPO);
         when(session.getArtifact(any()))
-                .thenAnswer(iom -> new org.apache.maven.internal.impl.DefaultArtifact(
+                .thenAnswer(iom -> new org.apache.maven.impl.DefaultArtifact(
                         session, iom.getArgument(0, org.eclipse.aether.artifact.Artifact.class)));
         return session;
     }
@@ -203,7 +203,7 @@ public class InstallMojoTest {
         return Collections.emptyList();
     }
 
-    private ArtifactInstallerRequest execute(Mojo mojo) {
+    private ArtifactInstallerRequest execute(Mojo mojo) throws Exception {
         AtomicReference<ArtifactInstallerRequest> request = new AtomicReference<>();
         doAnswer(iom -> {
                     ArtifactInstallerRequest req = iom.getArgument(0, ArtifactInstallerRequest.class);
