@@ -156,7 +156,6 @@ public class InstallMojoTest {
     public void testSkip(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         setVariableValueToObject(mojo, "session", this.session);
-        Project project = (Project) getVariableValueFromObject(mojo, "project");
         mojo.setSkip(true);
 
         assertNull(execute(mojo));
