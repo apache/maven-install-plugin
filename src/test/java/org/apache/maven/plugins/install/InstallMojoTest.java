@@ -57,7 +57,7 @@ public class InstallMojoTest extends AbstractMojoTestCase {
 
     InstallArtifactStub artifact;
 
-    private final String LOCAL_REPO = "target/local-repo/";
+    private static final String LOCAL_REPO = "target/local-repo/";
 
     public void setUp() throws Exception {
         super.setUp();

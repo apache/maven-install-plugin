@@ -56,9 +56,9 @@ public class InstallFileMojoTest extends AbstractMojoTestCase {
 
     private File file;
 
-    private final String LOCAL_REPO = "target/local-repo/";
+    private static final String LOCAL_REPO = "target/local-repo/";
 
-    private final String SPECIFIC_LOCAL_REPO = "target/specific-local-repo/";
+    private static final String SPECIFIC_LOCAL_REPO = "target/specific-local-repo/";
 
     public void setUp() throws Exception {
         super.setUp();
