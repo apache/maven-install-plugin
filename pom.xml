@@ -74,7 +74,7 @@
     <javaVersion>8</javaVersion>
     <mavenVersion>3.9.10</mavenVersion>
     <!-- Maven bound -->
-    <resolverVersion>1.9.23</resolverVersion>
+    <resolverVersion>1.9.24</resolverVersion>
     <!-- Maven bound -->
     <slf4jVersion>1.7.36</slf4jVersion>
 
