@@ -72,7 +72,7 @@
 
   <properties>
     <javaVersion>8</javaVersion>
-    <mavenVersion>3.9.10</mavenVersion>
+    <mavenVersion>3.9.11</mavenVersion>
     <!-- Maven bound -->
     <resolverVersion>1.9.23</resolverVersion>
     <!-- Maven bound -->
