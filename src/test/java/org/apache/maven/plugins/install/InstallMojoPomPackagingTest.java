@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
 import org.apache.maven.api.ProducedArtifact;
@@ -47,7 +48,6 @@ import org.apache.maven.api.services.ArtifactInstallerRequest;
 import org.apache.maven.api.services.ArtifactManager;
 import org.apache.maven.api.services.ProjectManager;
 import org.apache.maven.impl.InternalSession;
-import org.codehaus.plexus.util.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
