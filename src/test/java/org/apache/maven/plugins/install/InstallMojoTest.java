@@ -66,7 +66,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 @MojoTest
-public class InstallMojoTest {
+class InstallMojoTest {
 
     private static final String LOCAL_REPO = "target/local-repo/";
 
@@ -83,20 +83,20 @@ public class InstallMojoTest {
     ProjectManager projectManager;
 
     @BeforeEach
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         FileUtils.deleteDirectory(new File(getBasedir() + "/" + LOCAL_REPO));
     }
 
     @Test
     @InjectMojo(goal = "install")
-    public void testInstallTestEnvironment(InstallMojo mojo) {
+    void installTestEnvironment(InstallMojo mojo) {
         assertNotNull(mojo);
     }
 
     @Test
     @InjectMojo(goal = "install")
     @MojoParameter(name = "installAtEnd", value = "false")
-    public void testBasicInstall(InstallMojo mojo) throws Exception {
+    void basicInstall(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         Project project = (Project) getVariableValueFromObject(mojo, "project");
         artifactManager.setPath(
@@ -117,7 +117,7 @@ public class InstallMojoTest {
     @Test
     @InjectMojo(goal = "install")
     @MojoParameter(name = "installAtEnd", value = "false")
-    public void testBasicInstallWithAttachedArtifacts(InstallMojo mojo) throws Exception {
+    void basicInstallWithAttachedArtifacts(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         Project project = (Project) getVariableValueFromObject(mojo, "project");
         projectManager.attachArtifact(
@@ -142,7 +142,7 @@ public class InstallMojoTest {
 
     @Test
     @InjectMojo(goal = "install")
-    public void testInstallIfArtifactFileIsNull(InstallMojo mojo) throws Exception {
+    void installIfArtifactFileIsNull(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         Project project = (Project) getVariableValueFromObject(mojo, "project");
         assertFalse(artifactManager.getPath(project.getMainArtifact().get()).isPresent());
@@ -153,7 +153,7 @@ public class InstallMojoTest {
 
     @Test
     @InjectMojo(goal = "install")
-    public void testSkip(InstallMojo mojo) throws Exception {
+    void skip(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         setVariableValueToObject(mojo, "session", this.session);
         mojo.setSkip(true);
