@@ -68,7 +68,7 @@ import static org.mockito.Mockito.when;
  * @author <a href="mailto:aramirez@apache.org">Allan Ramirez</a>
  */
 @MojoTest
-public class InstallFileMojoTest {
+class InstallFileMojoTest {
     private static final String LOCAL_REPO = "target/local-repo";
 
     private String groupId;
@@ -88,7 +88,7 @@ public class InstallFileMojoTest {
     ArtifactInstaller artifactInstaller;
 
     @BeforeEach
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         FileUtils.deleteDirectory(new File(getBasedir() + "/" + LOCAL_REPO));
     }
 
@@ -101,7 +101,7 @@ public class InstallFileMojoTest {
     @MojoParameter(
             name = "file",
             value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
-    public void testInstallFileTestEnvironment(InstallFileMojo mojo) {
+    void installFileTestEnvironment(InstallFileMojo mojo) {
         assertNotNull(mojo);
     }
 
@@ -114,7 +114,7 @@ public class InstallFileMojoTest {
     @MojoParameter(
             name = "file",
             value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
-    public void testBasicInstallFile(InstallFileMojo mojo) throws Exception {
+    void basicInstallFile(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
 
@@ -141,7 +141,7 @@ public class InstallFileMojoTest {
     @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
     @MojoParameter(name = "packaging", value = "jar")
     @MojoParameter(name = "file", value = "${project.basedir}/target/test-classes/unit/file-does-not-exist.jar")
-    public void testFileDoesNotExists(InstallFileMojo mojo) throws Exception {
+    void fileDoesNotExists(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
 
@@ -158,7 +158,7 @@ public class InstallFileMojoTest {
     @MojoParameter(
             name = "file",
             value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
-    public void testInstallFileWithClassifier(InstallFileMojo mojo) throws Exception {
+    void installFileWithClassifier(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
         assertNotNull(classifier);
@@ -188,7 +188,7 @@ public class InstallFileMojoTest {
             name = "file",
             value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
     @MojoParameter(name = "generatePom", value = "true")
-    public void testInstallFileWithGeneratePom(InstallFileMojo mojo) throws Exception {
+    void installFileWithGeneratePom(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
         assertTrue((Boolean) getVariableValueFromObject(mojo, "generatePom"));
@@ -231,7 +231,7 @@ public class InstallFileMojoTest {
             name = "file",
             value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
     @MojoParameter(name = "pomFile", value = "${project.basedir}/src/test/resources/unit/pom.xml")
-    public void testInstallFileWithPomFile(InstallFileMojo mojo) throws Exception {
+    void installFileWithPomFile(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
         Path pomFile = (Path) getVariableValueFromObject(mojo, "pomFile");
@@ -257,7 +257,7 @@ public class InstallFileMojoTest {
     @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
     @MojoParameter(name = "packaging", value = "pom")
     @MojoParameter(name = "file", value = "${project.basedir}/target/test-classes/unit/pom.xml")
-    public void testInstallFileWithPomAsPackaging(InstallFileMojo mojo) throws Exception {
+    void installFileWithPomAsPackaging(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
         assertTrue(Files.exists(file));
@@ -281,7 +281,7 @@ public class InstallFileMojoTest {
             name = "file",
             value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
     @MojoParameter(name = "pomFile", value = "${project.basedir}/target/test-classes/unit/pom.xml")
-    public void testInstallFile(InstallFileMojo mojo) throws Exception {
+    void installFile(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
 

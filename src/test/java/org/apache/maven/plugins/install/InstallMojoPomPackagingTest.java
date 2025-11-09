@@ -63,7 +63,7 @@ import static org.mockito.Mockito.when;
  * @author <a href="mailto:aramirez@apache.org">Allan Ramirez</a>
  */
 @MojoTest
-public class InstallMojoPomPackagingTest {
+class InstallMojoPomPackagingTest {
 
     private static final String LOCAL_REPO = "target/local-repo/";
 
@@ -80,14 +80,14 @@ public class InstallMojoPomPackagingTest {
     ProjectManager projectManager;
 
     @BeforeEach
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         FileUtils.deleteDirectory(new File(getBasedir() + "/" + LOCAL_REPO));
     }
 
     @Test
     @InjectMojo(goal = "install")
     @MojoParameter(name = "installAtEnd", value = "false")
-    public void testInstallIfPackagingIsPom(InstallMojo mojo) throws Exception {
+    void installIfPackagingIsPom(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         Project project = (Project) getVariableValueFromObject(mojo, "project");
         String packaging = project.getPackaging().type().id();
