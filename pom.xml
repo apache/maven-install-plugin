@@ -82,6 +82,7 @@
     <mavenAntrunPluginVersion>${version.maven-antrun-plugin}</mavenAntrunPluginVersion>
     <mavenCompilerPluginVersion>${version.maven-compiler-plugin}</mavenCompilerPluginVersion>
     <mavenEnforcerPluginVersion>${version.maven-enforcer-plugin}</mavenEnforcerPluginVersion>
+    <mavenInvokerPluginVersion>${version.maven-invoker-plugin}</mavenInvokerPluginVersion>
     <mavenJarPluginVersion>${version.maven-jar-plugin}</mavenJarPluginVersion>
     <mavenPluginPluginVersion>${version.maven-plugin-tools}</mavenPluginPluginVersion>
     <mavenResourcesPluginVersion>${version.maven-resources-plugin}</mavenResourcesPluginVersion>
@@ -89,6 +90,8 @@
     <mavenSurefirePluginVersion>${version.maven-surefire}</mavenSurefirePluginVersion>
 
     <project.build.outputTimestamp>2025-02-24T06:39:59Z</project.build.outputTimestamp>
+
+    <version.maven-invoker-plugin>3.9.1</version.maven-invoker-plugin>
   </properties>
 
   <dependencies>
