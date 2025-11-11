@@ -77,11 +77,12 @@
     <slf4jVersion>2.0.17</slf4jVersion>
 
     <!-- plugin versions used in IT tests -->
-    <guiceVersion>6.0.0</guiceVersion>
+    <guiceVersion>5.1.0</guiceVersion>
     <junitVersion>5.14.1</junitVersion>
     <mavenAntrunPluginVersion>3.1.0</mavenAntrunPluginVersion>
     <mavenCompilerPluginVersion>3.10.1</mavenCompilerPluginVersion>
     <mavenEnforcerPluginVersion>3.1.0</mavenEnforcerPluginVersion>
+    <mavenInvokerPluginVersion>${version.maven-invoker-plugin}</mavenInvokerPluginVersion>
     <mavenJarPluginVersion>3.3.0</mavenJarPluginVersion>
     <mavenPluginPluginVersion>4.0.0-beta-1</mavenPluginPluginVersion>
     <mavenPluginTestingVersion>4.0.0-beta-4</mavenPluginTestingVersion>
