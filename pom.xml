@@ -89,7 +89,7 @@
     <mavenResourcesPluginVersion>3.3.0</mavenResourcesPluginVersion>
     <mavenSourcePluginVersion>3.2.1</mavenSourcePluginVersion>
     <mavenSurefirePluginVersion>3.2.2</mavenSurefirePluginVersion>
-    <mockitoVersion>5.20.0</mockitoVersion>
+    <mockitoVersion>5.21.0</mockitoVersion>
     <version.plexus-xml>4.0.1</version.plexus-xml>
     <version.maven-plugin-tools>${mavenPluginPluginVersion}</version.maven-plugin-tools>
     <version.maven-invoker-plugin>3.9.1</version.maven-invoker-plugin>
