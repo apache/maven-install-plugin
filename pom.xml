@@ -72,7 +72,7 @@
 
   <properties>
     <javaVersion>17</javaVersion>
-    <mavenVersion>4.0.0-rc-3</mavenVersion>
+    <mavenVersion>4.0.0-rc-5</mavenVersion>
     <!-- Maven bound -->
     <slf4jVersion>2.0.17</slf4jVersion>
 
