@@ -20,57 +20,52 @@ package org.apache.maven.plugins.install;
 
 import javax.inject.Inject;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
-import org.apache.maven.api.plugin.testing.Basedir;
+import org.apache.maven.api.di.Provides;
 import org.apache.maven.api.plugin.testing.InjectMojo;
 import org.apache.maven.api.plugin.testing.MojoParameter;
 import org.apache.maven.api.plugin.testing.MojoTest;
-import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Build;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.descriptor.PluginDescriptor;
-import org.apache.maven.plugins.install.stubs.AttachedArtifactStub0;
-import org.apache.maven.plugins.install.stubs.InstallArtifactStub;
-import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingRequest;
-import org.codehaus.plexus.util.FileUtils;
-import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.internal.impl.DefaultLocalPathComposer;
-import org.eclipse.aether.internal.impl.DefaultLocalPathPrefixComposerFactory;
-import org.eclipse.aether.internal.impl.DefaultTrackingFileManager;
-import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
-import org.eclipse.aether.repository.LocalRepository;
-import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
+import org.apache.maven.project.MavenProjectHelper;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.installation.InstallRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.apache.maven.api.plugin.testing.MojoExtension.getBasedir;
-import static org.apache.maven.api.plugin.testing.MojoExtension.getVariableValueFromObject;
-import static org.apache.maven.api.plugin.testing.MojoExtension.setVariableValueToObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * @author <a href="mailto:aramirez@apache.org">Allan Ramirez</a>
  */
-@MojoTest(realRepositorySession = true)
+@ExtendWith(MockitoExtension.class)
+@MojoTest
 public class InstallMojoTest {
+
+    @TempDir
+    private Path tempDir;
 
     @Inject
     private MavenProject mavenProject;
@@ -78,19 +73,27 @@ public class InstallMojoTest {
     @Inject
     private MavenSession mavenSession;
 
-    InstallArtifactStub artifact;
+    @Inject
+    private MavenProjectHelper mavenProjectHelper;
 
-    private static final String LOCAL_REPO = "target/local-repo/";
+    @Mock
+    private RepositorySystem repositorySystem;
+
+    @Captor
+    private ArgumentCaptor<InstallRequest> installRequestCaptor;
+
+    @Provides
+    @SuppressWarnings("unused")
+    private RepositorySystem repositorySystemProvides() {
+        return repositorySystem;
+    }
 
     @BeforeEach
     public void setUp() throws Exception {
-        //        super.setUp();
-
-        FileUtils.deleteDirectory(new File(getBasedir() + "/" + LOCAL_REPO));
-
         mavenProject.setGroupId("org.apache.maven.test");
         mavenProject.setArtifactId("maven-install-test");
         mavenProject.setVersion("1.0-SNAPSHOT");
+        mavenProject.setPackaging("jar");
 
         Plugin plugin = new Plugin();
         plugin.setArtifactId("maven-install-plugin");
@@ -99,123 +102,71 @@ public class InstallMojoTest {
         plugin.setExecutions(Collections.singletonList(execution));
         mavenProject.getBuild().addPlugin(plugin);
 
-        when(mavenSession.getProjects()).thenReturn(Collections.singletonList(mavenProject));
+        lenient().when(mavenSession.getProjects()).thenReturn(Collections.singletonList(mavenProject));
     }
 
     @Test
     @InjectMojo(goal = "install")
-    @Basedir("/unit/basic-install-test")
-    public void testInstallTestEnvironment(InstallMojo mojo) throws Exception {
-        //        File testPom = new File(getBasedir(),
-        // "target/test-classes/unit/basic-install-test/plugin-config.xml");
-
-        //        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
-
-        assertNotNull(mojo);
-    }
-
     public void testBasicInstall(InstallMojo mojo) throws Exception {
-        //        File testPom = new File(getBasedir(),
-        // "target/test-classes/unit/basic-install-test/plugin-config.xml");
-
-        //        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
-
-        assertNotNull(mojo);
-
-        File file = new File(
-                getBasedir(),
-                "target/test-classes/unit/basic-install-test/target/" + "maven-install-test-1.0-SNAPSHOT.jar");
-
-        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
-        updateMavenProject(project);
-
-        MavenSession session = createMavenSession();
-        session.setProjects(Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", session);
-        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
-        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-
-        artifact = (InstallArtifactStub) project.getArtifact();
-
-        artifact.setFile(file);
+        mojo.setPluginContext(new HashMap<>());
+        setProjectArtifact(mavenProject);
 
         mojo.execute();
 
-        String groupId = dotToSlashReplacer(artifact.getGroupId());
+        verify(repositorySystem).install(any(), installRequestCaptor.capture());
 
-        File installedArtifact = new File(
-                getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
-                        + artifact.getArtifactId() + "-" + artifact.getVersion() + "."
-                        + artifact.getArtifactHandler().getExtension());
+        InstallRequest installRequest = installRequestCaptor.getValue();
+        ArrayList<org.eclipse.aether.artifact.Artifact> artifacts = new ArrayList<>(installRequest.getArtifacts());
+        assertEquals(2, artifacts.size());
 
-        assertTrue(installedArtifact.exists());
-
-        assertEquals(5, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertArtifactInstalled(mavenProject, artifacts.get(0), "pom");
+        assertArtifactInstalled(mavenProject, artifacts.get(1), "jar");
     }
 
+    @Test
+    @InjectMojo(goal = "install")
     public void testBasicInstallWithAttachedArtifacts(InstallMojo mojo) throws Exception {
-        //        File testPom = new File(
-        //                getBasedir(),
-        //                "target/test-classes/unit/basic-install-test-with-attached-artifacts/" + "plugin-config.xml");
+        mojo.setPluginContext(new HashMap<>());
+        setProjectArtifact(mavenProject);
 
-        //        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
-
-        assertNotNull(mojo);
-
-        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
-        updateMavenProject(project);
-
-        MavenSession session = createMavenSession();
-        session.setProjects(Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", session);
-        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
-        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-
-        List<Artifact> attachedArtifacts = project.getAttachedArtifacts();
+        mavenProjectHelper.attachArtifact(
+                mavenProject,
+                "jar",
+                "next1",
+                Files.createTempFile(tempDir, "test-artifact1", "jar").toFile());
+        mavenProjectHelper.attachArtifact(
+                mavenProject,
+                "jar",
+                "next2",
+                Files.createTempFile(tempDir, "test-artifact2", "jar").toFile());
 
         mojo.execute();
 
-        String packaging = project.getPackaging();
+        verify(repositorySystem).install(any(), installRequestCaptor.capture());
 
-        String groupId;
+        InstallRequest installRequest = installRequestCaptor.getValue();
+        ArrayList<org.eclipse.aether.artifact.Artifact> artifacts = new ArrayList<>(installRequest.getArtifacts());
 
-        for (Object attachedArtifact1 : attachedArtifacts) {
-            AttachedArtifactStub0 attachedArtifact = (AttachedArtifactStub0) attachedArtifact1;
-
-            groupId = dotToSlashReplacer(attachedArtifact.getGroupId());
-
-            File installedArtifact = new File(
-                    getBasedir(),
-                    LOCAL_REPO + groupId + "/" + attachedArtifact.getArtifactId()
-                            + "/" + attachedArtifact.getVersion() + "/" + attachedArtifact.getArtifactId()
-                            + "-" + attachedArtifact.getVersion() + "." + packaging);
-
-            assertTrue(installedArtifact.exists(), installedArtifact.getPath() + " does not exist");
-        }
-
-        assertEquals(13, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(4, artifacts.size());
+        assertArtifactInstalled(mavenProject, artifacts.get(0), "pom");
+        assertArtifactInstalled(mavenProject, artifacts.get(1), "jar");
+        assertArtifactInstalled(mavenProject, artifacts.get(2), "next1", "jar");
+        assertArtifactInstalled(mavenProject, artifacts.get(3), "next2", "jar");
     }
 
+    @Test
+    @InjectMojo(goal = "install")
     public void testNonPomInstallWithAttachedArtifactsOnly(InstallMojo mojo) throws Exception {
-        //        File testPom = new File(
-        //                getBasedir(),
-        //                "target/test-classes/unit/basic-install-test-with-attached-artifacts/" + "plugin-config.xml");
+        mojo.setPluginContext(new HashMap<>());
+        setProjectArtifact(mavenProject);
 
-        //        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
+        mavenProjectHelper.attachArtifact(
+                mavenProject,
+                "jar",
+                "next1",
+                Files.createTempFile(tempDir, "test-artifact1", "jar").toFile());
 
-        assertNotNull(mojo);
-
-        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
-        updateMavenProject(project);
-
-        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
-        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "session", createMavenSession());
-
-        artifact = (InstallArtifactStub) project.getArtifact();
-
-        artifact.setFile(null);
+        mavenProject.getArtifact().setFile(null);
 
         try {
             mojo.execute();
@@ -227,62 +178,15 @@ public class InstallMojoTest {
                             + "but it has attachments. Change packaging to 'pom'.",
                     e.getMessage());
         }
+        verifyNoInteractions(repositorySystem);
     }
 
-    public void testUpdateReleaseParamSetToTrue(InstallMojo mojo) throws Exception {
-        //        File testPom = new File(getBasedir(),
-        // "target/test-classes/unit/configured-install-test/plugin-config.xml");
-
-        //        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
-
-        assertNotNull(mojo);
-
-        File file = new File(
-                getBasedir(),
-                "target/test-classes/unit/configured-install-test/target/" + "maven-install-test-1.0-SNAPSHOT.jar");
-
-        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
-        updateMavenProject(project);
-
-        MavenSession session = createMavenSession();
-        session.setProjects(Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", session);
-        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
-        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-
-        artifact = (InstallArtifactStub) project.getArtifact();
-
-        artifact.setFile(file);
-
-        mojo.execute();
-
-        //        assertTrue( artifact.isRelease() );
-
-        assertEquals(5, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
-    }
-
+    @Test
+    @InjectMojo(goal = "install")
     public void testInstallIfArtifactFileIsNull(InstallMojo mojo) throws Exception {
-        //        File testPom = new File(getBasedir(),
-        // "target/test-classes/unit/basic-install-test/plugin-config.xml");
-
-        //        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
-
-        assertNotNull(mojo);
-
-        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
-        updateMavenProject(project);
-
-        MavenSession session = createMavenSession();
-        session.setProjects(Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", session);
-        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
-        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-
-        artifact = (InstallArtifactStub) project.getArtifact();
-
-        artifact.setFile(null);
-
-        assertNull(artifact.getFile());
+        mojo.setPluginContext(new HashMap<>());
+        setProjectArtifact(mavenProject);
+        mavenProject.getArtifact().setFile(null);
 
         try {
             mojo.execute();
@@ -293,28 +197,15 @@ public class InstallMojoTest {
                     "The packaging plugin for project maven-install-test did not assign a file to the build artifact",
                     e.getMessage());
         }
-
-        assertFalse(new File(LOCAL_REPO).exists());
+        verifyNoInteractions(repositorySystem);
     }
 
+    @Test
+    @InjectMojo(goal = "install")
     public void testInstallIfProjectFileIsNull(InstallMojo mojo) throws Exception {
-        //        File testPom = new File(getBasedir(),
-        // "target/test-classes/unit/basic-install-test/plugin-config.xml");
-
-        //        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
-
-        assertNotNull(mojo);
-
-        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
-        updateMavenProject(project);
-
-        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
-        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        setVariableValueToObject(mojo, "session", createMavenSession());
-
-        project.setFile(null);
-
-        assertNull(project.getFile());
+        mojo.setPluginContext(new HashMap<>());
+        setProjectArtifact(mavenProject);
+        mavenProject.setFile(null);
 
         try {
             mojo.execute();
@@ -323,209 +214,83 @@ public class InstallMojoTest {
             // expected, message should include artifactId
             assertEquals("The POM for project maven-install-test could not be attached", e.getMessage());
         }
+        verifyNoInteractions(repositorySystem);
     }
 
+    @Test
+    @InjectMojo(goal = "install")
     public void testInstallIfPackagingIsPom(InstallMojo mojo) throws Exception {
-        //        File testPom = new File(
-        //                getBasedir(), "target/test-classes/unit/basic-install-test-packaging-pom/" +
-        // "plugin-config.xml");
-
-        //        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
-
-        assertNotNull(mojo);
-
-        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
-        updateMavenProject(project);
-
-        MavenSession session = createMavenSession();
-        session.setProjects(Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", session);
-        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
-        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-
-        String packaging = project.getPackaging();
-
-        assertEquals("pom", packaging);
-
-        artifact = (InstallArtifactStub) project.getArtifact();
+        mojo.setPluginContext(new HashMap<>());
+        mavenProject.setPomFile(
+                Files.createTempFile(tempDir, "test-artifact", "pom").toFile());
+        mavenProject.setPackaging("pom");
 
         mojo.execute();
 
-        String groupId = dotToSlashReplacer(artifact.getGroupId());
+        verify(repositorySystem).install(any(), installRequestCaptor.capture());
 
-        File installedArtifact = new File(
-                getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
-                        + artifact.getArtifactId() + "-" + artifact.getVersion() + "." + "pom");
+        InstallRequest installRequest = installRequestCaptor.getValue();
+        ArrayList<org.eclipse.aether.artifact.Artifact> artifacts = new ArrayList<>(installRequest.getArtifacts());
 
-        assertTrue(installedArtifact.exists());
-
-        assertEquals(4, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(1, artifacts.size());
+        assertArtifactInstalled(mavenProject, artifacts.get(0), "pom");
     }
 
+    @Test
+    @InjectMojo(goal = "install")
     public void testInstallIfPackagingIsBom(InstallMojo mojo) throws Exception {
-        //        File testPom = new File(
-        //                getBasedir(), "target/test-classes/unit/basic-install-test-packaging-bom/" +
-        // "plugin-config.xml");
-
-        //        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
-
-        assertNotNull(mojo);
-
-        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
-        updateMavenProject(project);
-
-        MavenSession session = createMavenSession();
-        session.setProjects(Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", session);
-        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
-        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-
-        String packaging = project.getPackaging();
-
-        assertEquals("bom", packaging);
-
-        artifact = (InstallArtifactStub) project.getArtifact();
+        mojo.setPluginContext(new HashMap<>());
+        mavenProject.setPomFile(
+                Files.createTempFile(tempDir, "test-artifact", "pom").toFile());
+        mavenProject.setPackaging("bom");
 
         mojo.execute();
 
-        String groupId = dotToSlashReplacer(artifact.getGroupId());
+        verify(repositorySystem).install(any(), installRequestCaptor.capture());
 
-        File installedArtifact = new File(
-                getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
-                        + artifact.getArtifactId() + "-" + artifact.getVersion() + "." + "pom");
+        InstallRequest installRequest = installRequestCaptor.getValue();
+        ArrayList<org.eclipse.aether.artifact.Artifact> artifacts = new ArrayList<>(installRequest.getArtifacts());
 
-        assertTrue(installedArtifact.exists());
-
-        assertEquals(4, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
-    }
-
-    public void testBasicInstallAndCreate(InstallMojo mojo) throws Exception {
-        //        File testPom = new File(getBasedir(),
-        // "target/test-classes/unit/basic-install-checksum/plugin-config.xml");
-
-        //        AbstractMojo mojo = (AbstractMojo) lookupMojo("install", testPom);
-
-        assertNotNull(mojo);
-
-        File file = new File(getBasedir(), "target/test-classes/unit/basic-install-checksum/" + "maven-test-jar.jar");
-
-        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
-        MavenSession mavenSession = createMavenSession();
-        updateMavenProject(project);
-
-        MavenSession session = createMavenSession();
-        session.setProjects(Collections.singletonList(project));
-        setVariableValueToObject(mojo, "session", session);
-        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
-        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-
-        artifact = (InstallArtifactStub) project.getArtifact();
-
-        artifact.setFile(file);
-
-        mojo.execute();
-
-        File pom = new File(
-                new File(LOCAL_REPO),
-                mavenSession
-                        .getRepositorySession()
-                        .getLocalRepositoryManager()
-                        .getPathForLocalArtifact(new DefaultArtifact(
-                                artifact.getGroupId(), artifact.getArtifactId(), "pom", artifact.getVersion())));
-
-        assertTrue(pom.exists());
-
-        String groupId = dotToSlashReplacer(artifact.getGroupId());
-        String packaging = project.getPackaging();
-        String localPath = getBasedir() + "/" + LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/"
-                + artifact.getVersion() + "/" + artifact.getArtifactId() + "-" + artifact.getVersion();
-
-        File installedArtifact = new File(localPath + "." + packaging);
-
-        assertTrue(installedArtifact.exists());
-
-        assertEquals(5, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(1, artifacts.size());
+        assertArtifactInstalled(mavenProject, artifacts.get(0), "pom");
     }
 
     @Test
     @InjectMojo(goal = "install")
     @MojoParameter(name = "skip", value = "true")
-    @Basedir("/unit/basic-install-test")
     public void testSkip(InstallMojo mojo) throws Exception {
-        mojo.setPluginContext(new ConcurrentHashMap<>());
-        //        File testPom = new File(getBasedir(),
-        // "target/test-classes/unit/basic-install-test/plugin-config.xml");
-
-        //        InstallMojo mojo = (InstallMojo) lookupMojo("install", testPom);
-
-        assertNotNull(mojo);
-
-        //        File file = new File(
-        //                getBasedir(),
-        //                "target/test-classes/unit/basic-install-test/target/" +
-        // "maven-install-test-1.0-SNAPSHOT.jar");
-
-        //        MavenProject project = (MavenProject) getVariableValueFromObject(mojo, "project");
-        //        updateMavenProject(project);
-
-        //        MavenSession session = createMavenSession();
-        //        session.setProjects(Collections.singletonList(project));
-        //        setVariableValueToObject(mojo, "session", session);
-        //        setVariableValueToObject(mojo, "pluginContext", new ConcurrentHashMap<>());
-        //        setVariableValueToObject(mojo, "pluginDescriptor", new PluginDescriptor());
-        //        setVariableValueToObject(mojo, "skip", Boolean.TRUE);
-
-        //        artifact = (InstallArtifactStub) project.getArtifact();
-
-        //        artifact.setFile(file);
+        mojo.setPluginContext(new HashMap<>());
 
         mojo.execute();
 
-        //        String groupId = dotToSlashReplacer(artifact.getGroupId());
-
-        //        String packaging = project.getPackaging();
-
-        //        File installedArtifact = new File(
-        //                getBasedir(),
-        //                LOCAL_REPO + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
-        //                        + artifact.getArtifactId() + "-" + artifact.getVersion() + "." + packaging);
-        //
-        //        assertFalse(installedArtifact.exists());
-        //
-        //        assertFalse(new File(LOCAL_REPO).exists());
+        verifyNoInteractions(repositorySystem);
     }
 
-    private String dotToSlashReplacer(String parameter) {
-        return parameter.replace('.', '/');
+    private void assertArtifactInstalled(
+            MavenProject mavenProject, org.eclipse.aether.artifact.Artifact artifact, String type) {
+        assertEquals(mavenProject.getArtifactId(), artifact.getArtifactId());
+        assertEquals(mavenProject.getGroupId(), artifact.getGroupId());
+        assertEquals(mavenProject.getVersion(), artifact.getVersion());
+        assertEquals(type, artifact.getExtension());
     }
 
-    private MavenSession createMavenSession() throws NoLocalRepositoryManagerException {
-        MavenSession session = mock(MavenSession.class);
-        DefaultRepositorySystemSession repositorySession = new DefaultRepositorySystemSession();
-        repositorySession.setLocalRepositoryManager(new EnhancedLocalRepositoryManagerFactory(
-                        new DefaultLocalPathComposer(),
-                        new DefaultTrackingFileManager(),
-                        new DefaultLocalPathPrefixComposerFactory())
-                .newInstance(repositorySession, new LocalRepository(LOCAL_REPO)));
-        ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
-        buildingRequest.setRepositorySession(repositorySession);
-        when(session.getProjectBuildingRequest()).thenReturn(buildingRequest);
-        when(session.getRepositorySession()).thenReturn(repositorySession);
-        when(session.getPluginContext(any(PluginDescriptor.class), any(MavenProject.class)))
-                .thenReturn(new ConcurrentHashMap<String, Object>());
-        return session;
+    private void assertArtifactInstalled(MavenProject mavenProject, Artifact artifact, String classifier, String type) {
+        assertArtifactInstalled(mavenProject, artifact, type);
+        assertEquals(classifier, artifact.getClassifier());
     }
 
-    private void updateMavenProject(MavenProject project) {
-        project.setGroupId(project.getArtifact().getGroupId());
-        project.setArtifactId(project.getArtifact().getArtifactId());
-        project.setVersion(project.getArtifact().getVersion());
-
-        Plugin plugin = new Plugin();
-        plugin.setArtifactId("maven-install-plugin");
-        project.setBuild(new Build());
-        project.getBuild().addPlugin(plugin);
+    private void setProjectArtifact(MavenProject mavenProject) throws IOException {
+        org.apache.maven.artifact.DefaultArtifact artifact = new org.apache.maven.artifact.DefaultArtifact(
+                mavenProject.getGroupId(),
+                mavenProject.getArtifactId(),
+                mavenProject.getVersion(),
+                null,
+                "jar",
+                null,
+                new DefaultArtifactHandler("jar"));
+        artifact.setFile(Files.createTempFile(tempDir, "test-artifact", "jar").toFile());
+        mavenProject.setArtifact(artifact);
+        mavenProject.setPomFile(
+                Files.createTempFile(tempDir, "test-artifact", "pom").toFile());
     }
 }
