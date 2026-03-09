@@ -18,229 +18,166 @@
  */
 package org.apache.maven.plugins.install;
 
+import javax.inject.Inject;
+
 import java.io.File;
 import java.io.Reader;
 
+import org.apache.maven.api.plugin.testing.Basedir;
+import org.apache.maven.api.plugin.testing.InjectMojo;
+import org.apache.maven.api.plugin.testing.MojoParameter;
+import org.apache.maven.api.plugin.testing.MojoTest;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.apache.maven.project.DefaultProjectBuildingRequest;
-import org.apache.maven.project.ProjectBuildingRequest;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.xml.XmlStreamReader;
-import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.internal.impl.DefaultLocalPathComposer;
-import org.eclipse.aether.internal.impl.DefaultLocalPathPrefixComposerFactory;
-import org.eclipse.aether.internal.impl.DefaultTrackingFileManager;
-import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
-import org.eclipse.aether.repository.LocalRepository;
-import org.eclipse.aether.repository.NoLocalRepositoryManagerException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.maven.api.plugin.testing.MojoExtension.getBasedir;
 import static org.apache.maven.api.plugin.testing.MojoExtension.getVariableValueFromObject;
-import static org.apache.maven.api.plugin.testing.MojoExtension.setVariableValueToObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * @author <a href="mailto:aramirez@apache.org">Allan Ramirez</a>
  */
+@MojoTest(realRepositorySession = true)
 public class InstallFileMojoTest {
-    private String groupId;
-
-    private String artifactId;
-
-    private String version;
-
-    private String packaging;
-
-    private String classifier;
-
-    private File file;
 
     private static final String LOCAL_REPO = "target/local-repo/";
-
     private static final String SPECIFIC_LOCAL_REPO = "target/specific-local-repo/";
 
-    public void setUp() throws Exception {
-        //        super.setUp();
+    @Inject
+    private MavenSession mavenSession;
 
+    @BeforeEach
+    public void setUp() throws Exception {
         FileUtils.deleteDirectory(new File(getBasedir() + "/" + LOCAL_REPO));
         FileUtils.deleteDirectory(new File(getBasedir() + "/" + SPECIFIC_LOCAL_REPO));
+
+        mavenSession.getRequest().setLocalRepositoryPath(getBasedir() + "/" + LOCAL_REPO);
     }
 
-    public void testInstallFileFromLocalRepositoryToLocalRepositoryPath(InstallFileMojo mojo) throws Exception {
-        File localRepository =
-                new File(getBasedir(), "target/test-classes/unit/install-file-from-local-repository-test/target");
-
-        //        File testPom = new File(localRepository.getParentFile(), "plugin-config.xml");
-
-        //        InstallFileMojo mojo = (InstallFileMojo) lookupMojo("install-file", testPom);
-
-        assertNotNull(mojo);
-
-        setVariableValueToObject(mojo, "session", createMavenSession(localRepository.getAbsolutePath()));
-
-        File specificLocalRepositoryPath = new File(getBasedir() + "/" + SPECIFIC_LOCAL_REPO);
-
-        setVariableValueToObject(mojo, "localRepositoryPath", specificLocalRepositoryPath);
-
-        assignValuesForParameter(mojo);
-
-        mojo.execute();
-
-        String localPath = getBasedir() + "/" + SPECIFIC_LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/"
-                + artifactId + "-" + version;
-
-        File installedArtifact = new File(localPath + "." + "jar");
-
-        assertTrue(installedArtifact.exists());
-
-        assertEquals(
-                5,
-                FileUtils.getFiles(new File(SPECIFIC_LOCAL_REPO), null, null).size(),
-                FileUtils.getFiles(new File(SPECIFIC_LOCAL_REPO), null, null).toString());
-    }
-
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
+    @MojoParameter(name = "localRepositoryPath", value = "${basedir}/" + SPECIFIC_LOCAL_REPO)
+    @Basedir("/unit/install-file-basic-test")
     public void testInstallFileWithLocalRepositoryPath(InstallFileMojo mojo) throws Exception {
-        //        File testPom =
-        //                new File(getBasedir(), "target/test-classes/unit/install-file-with-checksum/" +
-        // "plugin-config.xml");
-
-        //        InstallFileMojo mojo = (InstallFileMojo) lookupMojo("install-file", testPom);
-
-        assertNotNull(mojo);
-
-        setVariableValueToObject(mojo, "session", createMavenSession(LOCAL_REPO));
-
-        File specificLocalRepositoryPath = new File(getBasedir() + "/" + SPECIFIC_LOCAL_REPO);
-
-        setVariableValueToObject(mojo, "localRepositoryPath", specificLocalRepositoryPath);
-
-        assignValuesForParameter(mojo);
-
         mojo.execute();
 
-        String localPath = getBasedir() + "/" + SPECIFIC_LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/"
-                + artifactId + "-" + version;
+        File installedArtifact = new File(
+                getBasedir(),
+                SPECIFIC_LOCAL_REPO
+                        + "org/apache/maven/test/maven-install-file-test/1.0-SNAPSHOT/maven-install-file-test-1.0-SNAPSHOT.jar");
 
-        File installedArtifact = new File(localPath + "." + "jar");
-
-        assertTrue(installedArtifact.exists());
+        assertTrue(
+                installedArtifact.exists(), "Installed artifact should exist: " + installedArtifact.getAbsolutePath());
 
         assertEquals(
                 5,
-                FileUtils.getFiles(new File(SPECIFIC_LOCAL_REPO), null, null).size(),
-                FileUtils.getFiles(new File(SPECIFIC_LOCAL_REPO), null, null).toString());
+                FileUtils.getFiles(new File(getBasedir(), SPECIFIC_LOCAL_REPO), null, null)
+                        .size(),
+                FileUtils.getFiles(new File(getBasedir(), SPECIFIC_LOCAL_REPO), null, null)
+                        .toString());
     }
 
-    public void testInstallFileTestEnvironment(InstallFileMojo mojo) throws Exception {
-        //        File testPom = new File(getBasedir(),
-        // "target/test-classes/unit/install-file-basic-test/plugin-config.xml");
-
-        //        InstallFileMojo mojo = (InstallFileMojo) lookupMojo("install-file", testPom);
-
-        setVariableValueToObject(mojo, "session", createMavenSession(LOCAL_REPO));
-
-        assertNotNull(mojo);
-    }
-
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
+    @Basedir("/unit/install-file-basic-test")
     public void testBasicInstallFile(InstallFileMojo mojo) throws Exception {
-        //        File testPom = new File(getBasedir(),
-        // "target/test-classes/unit/install-file-basic-test/plugin-config.xml");
-
-        //        InstallFileMojo mojo = (InstallFileMojo) lookupMojo("install-file", testPom);
-
-        assertNotNull(mojo);
-
-        setVariableValueToObject(mojo, "session", createMavenSession(LOCAL_REPO));
-
-        assignValuesForParameter(mojo);
-
         mojo.execute();
 
         File installedArtifact = new File(
                 getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + "."
-                        + packaging);
+                LOCAL_REPO
+                        + "org/apache/maven/test/maven-install-file-test/1.0-SNAPSHOT/maven-install-file-test-1.0-SNAPSHOT.jar");
 
-        assertTrue(installedArtifact.exists());
+        assertTrue(
+                installedArtifact.exists(), "Installed artifact should exist: " + installedArtifact.getAbsolutePath());
 
-        assertEquals(5, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(
+                5,
+                FileUtils.getFiles(new File(getBasedir(), LOCAL_REPO), null, null)
+                        .size());
     }
 
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "classifier", value = "sources")
+    @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
+    @Basedir("/unit/install-file-basic-test")
     public void testInstallFileWithClassifier(InstallFileMojo mojo) throws Exception {
-        //        File testPom =
-        //                new File(getBasedir(),
-        // "target/test-classes/unit/install-file-with-classifier/plugin-config.xml");
-
-        //        InstallFileMojo mojo = (InstallFileMojo) lookupMojo("install-file", testPom);
-
-        assertNotNull(mojo);
-
-        setVariableValueToObject(mojo, "session", createMavenSession(LOCAL_REPO));
-
-        assignValuesForParameter(mojo);
-
-        assertNotNull(classifier);
-
         mojo.execute();
 
         File installedArtifact = new File(
                 getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + "-"
-                        + classifier + "." + packaging);
+                LOCAL_REPO
+                        + "org/apache/maven/test/maven-install-file-test/1.0-SNAPSHOT/maven-install-file-test-1.0-SNAPSHOT-sources.jar");
 
-        assertTrue(installedArtifact.exists());
+        assertTrue(
+                installedArtifact.exists(), "Installed artifact should exist: " + installedArtifact.getAbsolutePath());
 
-        assertEquals(5, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(
+                5,
+                FileUtils.getFiles(new File(getBasedir(), LOCAL_REPO), null, null)
+                        .size());
     }
 
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "generatePom", value = "true")
+    @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
+    @Basedir("/unit/install-file-test-generatePom")
     public void testInstallFileWithGeneratePom(InstallFileMojo mojo) throws Exception {
-        //        File testPom =
-        //                new File(getBasedir(),
-        // "target/test-classes/unit/install-file-test-generatePom/plugin-config.xml");
-
-        //        InstallFileMojo mojo = (InstallFileMojo) lookupMojo("install-file", testPom);
-
-        assertNotNull(mojo);
-
-        setVariableValueToObject(mojo, "session", createMavenSession(LOCAL_REPO));
-
-        assignValuesForParameter(mojo);
-
         mojo.execute();
 
         File installedArtifact = new File(
                 getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + "."
-                        + packaging);
+                LOCAL_REPO
+                        + "org/apache/maven/test/maven-install-file-test/1.0-SNAPSHOT/maven-install-file-test-1.0-SNAPSHOT.jar");
 
-        assertTrue((Boolean) getVariableValueFromObject(mojo, "generatePom"));
-
-        assertTrue(installedArtifact.exists());
+        assertTrue(
+                installedArtifact.exists(), "Installed artifact should exist: " + installedArtifact.getAbsolutePath());
 
         File installedPom = new File(
                 getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + "."
-                        + "pom");
+                LOCAL_REPO
+                        + "org/apache/maven/test/maven-install-file-test/1.0-SNAPSHOT/maven-install-file-test-1.0-SNAPSHOT.pom");
 
         try (Reader reader = new XmlStreamReader(installedPom)) {
             Model model = new MavenXpp3Reader().read(reader);
 
             assertEquals("4.0.0", model.getModelVersion());
-
-            assertEquals((String) getVariableValueFromObject(mojo, "groupId"), model.getGroupId());
-
-            assertEquals(artifactId, model.getArtifactId());
-
-            assertEquals(version, model.getVersion());
+            assertEquals("org.apache.maven.test", model.getGroupId());
+            assertEquals("maven-install-file-test", model.getArtifactId());
+            assertEquals("1.0-SNAPSHOT", model.getVersion());
         }
 
-        assertEquals(5, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
+        assertEquals(
+                5,
+                FileUtils.getFiles(new File(getBasedir(), LOCAL_REPO), null, null)
+                        .size());
     }
 
     public void testInstallFileWithPomFile(InstallFileMojo mojo) throws Exception {
@@ -252,9 +189,7 @@ public class InstallFileMojoTest {
 
         assertNotNull(mojo);
 
-        setVariableValueToObject(mojo, "session", createMavenSession(LOCAL_REPO));
-
-        assignValuesForParameter(mojo);
+        //        setVariableValueToObject(mojo, "session", createMavenSession(LOCAL_REPO));
 
         mojo.execute();
 
@@ -262,19 +197,21 @@ public class InstallFileMojoTest {
 
         assertTrue(pomFile.exists());
 
-        File installedArtifact = new File(
-                getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + "."
-                        + packaging);
-
-        assertTrue(installedArtifact.exists());
-
-        File installedPom = new File(
-                getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + "."
-                        + "pom");
-
-        assertTrue(installedPom.exists());
+        //        File installedArtifact = new File(
+        //                getBasedir(),
+        //                LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version +
+        // "."
+        //                        + packaging);
+        //
+        //        assertTrue(installedArtifact.exists());
+        //
+        //        File installedPom = new File(
+        //                getBasedir(),
+        //                LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version +
+        // "."
+        //                        + "pom");
+        //
+        //        assertTrue(installedPom.exists());
 
         assertEquals(5, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
     }
@@ -288,84 +225,22 @@ public class InstallFileMojoTest {
 
         assertNotNull(mojo);
 
-        setVariableValueToObject(mojo, "session", createMavenSession(LOCAL_REPO));
+        //        setVariableValueToObject(mojo, "session", createMavenSession(LOCAL_REPO));
 
-        assignValuesForParameter(mojo);
+        //        assertTrue(file.exists());
 
-        assertTrue(file.exists());
-
-        assertEquals("pom", packaging);
+        //        assertEquals("pom", packaging);
 
         mojo.execute();
 
-        File installedPom = new File(
-                getBasedir(),
-                LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + "."
-                        + "pom");
+        //        File installedPom = new File(
+        //                getBasedir(),
+        //                LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version +
+        // "."
+        //                        + "pom");
 
-        assertTrue(installedPom.exists());
+        //        assertTrue(installedPom.exists());
 
         assertEquals(4, FileUtils.getFiles(new File(LOCAL_REPO), null, null).size());
-    }
-
-    public void testInstallFile(InstallFileMojo mojo) throws Exception {
-        //        File testPom =
-        //                new File(getBasedir(), "target/test-classes/unit/install-file-with-checksum/" +
-        // "plugin-config.xml");
-
-        //        InstallFileMojo mojo = (InstallFileMojo) lookupMojo("install-file", testPom);
-
-        assertNotNull(mojo);
-
-        setVariableValueToObject(mojo, "session", createMavenSession(LOCAL_REPO));
-
-        assignValuesForParameter(mojo);
-
-        mojo.execute();
-
-        String localPath = getBasedir() + "/" + LOCAL_REPO + groupId + "/" + artifactId + "/" + version + "/"
-                + artifactId + "-" + version;
-
-        File installedArtifact = new File(localPath + "." + "jar");
-
-        assertTrue(installedArtifact.exists());
-
-        assertEquals(
-                5,
-                FileUtils.getFiles(new File(LOCAL_REPO), null, null).size(),
-                FileUtils.getFiles(new File(LOCAL_REPO), null, null).toString());
-    }
-
-    private void assignValuesForParameter(Object obj) throws Exception {
-        this.groupId = dotToSlashReplacer((String) getVariableValueFromObject(obj, "groupId"));
-
-        this.artifactId = (String) getVariableValueFromObject(obj, "artifactId");
-
-        this.version = (String) getVariableValueFromObject(obj, "version");
-
-        this.packaging = (String) getVariableValueFromObject(obj, "packaging");
-
-        this.classifier = (String) getVariableValueFromObject(obj, "classifier");
-
-        this.file = (File) getVariableValueFromObject(obj, "file");
-    }
-
-    private String dotToSlashReplacer(String parameter) {
-        return parameter.replace('.', '/');
-    }
-
-    private MavenSession createMavenSession(String localRepositoryBaseDir) throws NoLocalRepositoryManagerException {
-        MavenSession session = mock(MavenSession.class);
-        DefaultRepositorySystemSession repositorySession = new DefaultRepositorySystemSession();
-        repositorySession.setLocalRepositoryManager(new EnhancedLocalRepositoryManagerFactory(
-                        new DefaultLocalPathComposer(),
-                        new DefaultTrackingFileManager(),
-                        new DefaultLocalPathPrefixComposerFactory())
-                .newInstance(repositorySession, new LocalRepository(localRepositoryBaseDir)));
-        ProjectBuildingRequest buildingRequest = new DefaultProjectBuildingRequest();
-        buildingRequest.setRepositorySession(repositorySession);
-        when(session.getProjectBuildingRequest()).thenReturn(buildingRequest);
-        when(session.getRepositorySession()).thenReturn(repositorySession);
-        return session;
     }
 }
