@@ -72,7 +72,7 @@
 
   <properties>
     <javaVersion>8</javaVersion>
-    <mavenVersion>3.9.15</mavenVersion>
+    <mavenVersion>3.9.16</mavenVersion>
     <!-- Maven bound -->
     <resolverVersion>1.9.27</resolverVersion>
     <!-- Maven bound -->
@@ -90,8 +90,6 @@
     <mavenSurefirePluginVersion>${version.maven-surefire}</mavenSurefirePluginVersion>
 
     <project.build.outputTimestamp>2025-02-24T06:39:59Z</project.build.outputTimestamp>
-
-    <version.maven-invoker-plugin>3.9.1</version.maven-invoker-plugin>
   </properties>
 
   <dependencies>
