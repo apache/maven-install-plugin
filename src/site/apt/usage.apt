@@ -39,7 +39,7 @@ Usage
 
 * The <<<install:install>>> goal
 
-  In most cases, <<<install:install>>> goal doesn't need any configuration, it
+  In most cases, the <<<install:install>>> goal doesn't need any configuration. It
   needs the project's POM and the artifact file to be installed during the
   <<<install>>> phase of the default build lifecycle.
 
@@ -49,7 +49,7 @@ mvn install
 
 * The <<<install:install-file>>> goal
 
-  The <<<install:install-file>>> goal is used primarily for installing artifacts to
+  The <<<install:install-file>>> goal is used primarily to install artifacts in
   the local repository which were not built by Maven. The project's development team
   may or may not provide a POM for the artifact. Here's a list of some of the available parameters for the
   <<<install-file>>> goal:
@@ -64,7 +64,7 @@ mvn install:install-file -Dfile=your-artifact-1.0.jar \
                          [-Dversion=1.0] \
                          [-Dpackaging=jar] \
                          [-Dclassifier=sources] \
-                         [-DgeneratePom=true] \
+                         [-DgeneratePom=true]
 +---+
 
   * the groupId, artifactId, version and packaging of the file to install. These can
