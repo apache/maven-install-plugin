@@ -1,10 +1,10 @@
   ----
   Generating a generic POM
-  ------
+  ----
   Allan Ramirez
-  ------
+  ----
   2009-03-22
-  ------
+  ----
 
 ~~ Licensed to the Apache Software Foundation (ASF) under one
 ~~ or more contributor license agreements.  See the NOTICE file
@@ -32,8 +32,7 @@ Generating a generic POM
   For instance, when installing a proprietary or commercial JAR into a repository.
   The Install Plugin can create a generic POM in this case which
   contains the minimal set of POM elements required by Maven, such as groupId,
-  artifactId, version, packaging.  You tell Maven to generate a POM by setting the
-  <<<generatePom>>> parameter to <<<true>>>.
+  artifactId, version, packaging.  You tell Maven to generate a POM by setting the <<<generatePom>>> parameter to <<<true>>>.
 
 +---+
 mvn ${project.groupId}:${project.artifactId}:${project.version}:install-file  -Dfile=path-to-your-artifact-jar \

@@ -1,10 +1,10 @@
-  ------
+  ----
   Introduction
-  ------
+  ----
   Allan Ramirez
-  ------
+  ----
   2013-07-22
-  ------
+  ----
 
 ~~ Licensed to the Apache Software Foundation (ASF) under one
 ~~ or more contributor license agreements.  See the NOTICE file
@@ -33,10 +33,10 @@ ${project.name}
   the information in the POM (groupId, artifactId, version) to determine
   the proper location for the artifact within the local repository.
 
-  The local repository is the local cache where
+  The local repository is the local cache where,
   all artifacts needed for the build are stored. By default, it is located within
-  the user's home directory <<<(~/.m2/repository)>>> but the location can be configured in
-  <<<~/.m2/settings.xml>>> using the <<<\<localRepository\>>>> element.
+   the user's home directory <<<(~/.m2/repository)>>> but the location can be configured in
+   <<<~/.m2/settings.xml>>> using the <<<&lt;localRepository&gt;>>>> element.
 
 * Goals Overview
 
