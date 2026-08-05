@@ -1,10 +1,10 @@
-  ------
+  ----
   Installing Secondary Artifacts
-  ------
+  ----
   Dennis Lundberg
-  ------
+  ----
   2009-03-22
-  ------
+  ----
 
 ~~ Licensed to the Apache Software Foundation (ASF) under one
 ~~ or more contributor license agreements.  See the NOTICE file
@@ -42,7 +42,7 @@ Installing Secondary Artifacts
 +---+
 mvn ${project.groupId}:${project.artifactId}:${project.version}:install-file  -Dfile=path-to-commons-logging-sources.jar \
                                                                               -DgroupId=commons-logging \
-                                                                              -DartifactId=commons-logging \ 
+                                                                              -DartifactId=commons-logging \
                                                                               -Dversion=1.0.3 \
                                                                               -Dpackaging=jar \
                                                                               -Dclassifier=sources
