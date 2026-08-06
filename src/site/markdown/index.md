@@ -1,95 +1,51 @@
-  ------
-  Introduction
-  ------
-  Allan Ramirez
-  ------
-  2013-07-22
-  ------
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
 
-~~ Licensed to the Apache Software Foundation (ASF) under one
-~~ or more contributor license agreements.  See the NOTICE file
-~~ distributed with this work for additional information
-~~ regarding copyright ownership.  The ASF licenses this file
-~~ to you under the Apache License, Version 2.0 (the
-~~ "License"); you may not use this file except in compliance
-~~ with the License.  You may obtain a copy of the License at
-~~
-~~   http://www.apache.org/licenses/LICENSE-2.0
-~~
-~~ Unless required by applicable law or agreed to in writing,
-~~ software distributed under the License is distributed on an
-~~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-~~ KIND, either express or implied.  See the License for the
-~~ specific language governing permissions and limitations
-~~ under the License.
+http://www.apache.org/licenses/LICENSE-2.0
 
-~~ NOTE: For help with the syntax of this file, see:
-~~ http://maven.apache.org/doxia/references/apt-format.html
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
 
-${project.name}
+# Apache Maven Install Plugin
+The Install Plugin is used during the `install` phase to add artifact(s) to the local repository. The Install Plugin uses the information in the POM (groupId, artifactId, version) to determine the proper location for the artifact within the local repository.
 
-  The Install Plugin is used during the <<<install>>> phase to add
-  artifact(s) to the local repository. The Install Plugin uses
-  the information in the POM (groupId, artifactId, version) to determine
-  the proper location for the artifact within the local repository.
+The local repository is the local cache where all artifacts needed for the build are stored. By default, it is located within the user's home directory `(~/.m2/repository)` but the location can be configured in `~/.m2/settings.xml` using the `<localRepository>` element.
 
-  The local repository is the local cache where
-  all artifacts needed for the build are stored. By default, it is located within
-  the user's home directory <<<(~/.m2/repository)>>> but the location can be configured in
-  <<<~/.m2/settings.xml>>> using the <<<\<localRepository\>>>> element.
+## Goals Overview
 
-* Goals Overview
+The Install Plugin has 3 goals:
 
-  The Install Plugin has 3 goals:
+- [install:install](./install-mojo.html) is used to automatically install the project's main artifact (the JAR, WAR or EAR), its POM and any attached artifacts (sources, javadoc, etc) produced by a particular project.
+- [install:install-file](./install-file-mojo.html) is mostly used to install an externally created artifact into the local repository, along with its POM. In that case the project information can be taken from an optionally specified pomFile, but can also be given using command line parameters.
+- [install:help](./help-mojo.html) displays help information on maven-install-plugin.
+## Important Note for Version 3.0.0+
 
-  * {{{./install-mojo.html}install:install}} is used to automatically install the
-    project's main artifact (the JAR, WAR or EAR), its POM and any attached artifacts
-    (sources, javadoc, etc) produced by a particular project.
+The [install:install](./install-mojo.html) goal no longer supports creating checksums via `-DcreateChecksum=true`. Details can be found in [MINSTALL-143](https://issues.apache.org/jira/browse/MINSTALL-143).
 
-  * {{{./install-file-mojo.html}install:install-file}} is mostly used to install an externally
-    created artifact into the local repository, along with its POM. In that case
-    the project information can be taken from an optionally specified pomFile, but can
-    also be given using command line parameters.
+## Usage
 
-  * {{{./help-mojo.html}install:help}} displays help information on maven-install-plugin.
+General instructions for using the Install Plugin can be found on the [usage page](./usage.html). Some more specific use cases are described in the examples given below.
 
-  []
+If you have questions about the plugin's usage, read the [FAQ](./faq.html) and feel free to contact the [user mailing list](./mailing-lists.html). Posts to the mailing list are archived and could already contain the answer to your question as part of an older thread. Hence, it is also worth browsing/searching the [mail archive](./mailing-lists.html).
 
-* Important Note for Version 3.0.0+
+If you think the plugin is missing a feature or has a defect, you can file a feature request or bug report in our [issue tracker](./issue-management.html). When creating a new issue, please provide a comprehensive description of your concern. Especially for fixing bugs it is crucial that the developers can reproduce your problem. For this reason, entire debug logs, POMs or most preferably little demo projects attached to the issue are very much appreciated. Of course, patches are welcome, too. Contributors can check out the project from our [source repository](./scm.html) and will find supplementary information in the [guide to helping with Maven](http://maven.apache.org/guides/development/guide-helping.html).
 
-  The {{{./install-mojo.html}install:install}} goal no longer supports creating checksums
-  via <<<-DcreateChecksum=true>>>. Details can be found
-  in {{{https://issues.apache.org/jira/browse/MINSTALL-143}MINSTALL-143}}.
-  
-* Usage
+## Examples
 
-  General instructions for using the Install Plugin can be found on the {{{./usage.html}usage page}}. Some more
-  specific use cases are described in the examples given below.
+To provide you with a better understanding of some usages of the Maven Install Plugin, you can take a look into the following examples:
 
-  If you have questions about the plugin's usage, read the {{{./faq.html}FAQ}} and feel
-  free to contact the {{{./mailing-lists.html}user mailing list}}. Posts to the mailing list are archived and could
-  already contain the answer to your question as part of an older thread. Hence, it is also worth browsing/searching
-  the {{{./mailing-lists.html}mail archive}}.
-
-  If you think the plugin is missing a feature or has a defect, you can file a feature request or bug report in our
-  {{{./issue-management.html}issue tracker}}. When creating a new issue, please provide a comprehensive description of your
-  concern. Especially for fixing bugs it is crucial that the developers can reproduce your problem. For this reason,
-  entire debug logs, POMs or most preferably little demo projects attached to the issue are very much appreciated.
-  Of course, patches are welcome, too. Contributors can check out the project from our
-  {{{./scm.html}source repository}} and will find supplementary information in the
-  {{{http://maven.apache.org/guides/development/guide-helping.html}guide to helping with Maven}}.
-
-* Examples
-
-  To provide you with a better understanding of some usages of the Maven Install Plugin,
-  you can take a look into the following examples:
-
-  * {{{./examples/custom-pom-installation.html}Installing a Custom POM}}
-
-  * {{{./examples/generic-pom-generation.html}Generating a Generic POM}}
-
-  * {{{./examples/specific-local-repo.html}Installing an Artifact to a Specific Local Repository Path}}
-
-  * {{{./examples/installing-secondary-artifacts.html}Installing Secondary Artifacts}}
-
-  []
+- [Installing a Custom POM](./examples/custom-pom-installation.html)
+- [Generating a Generic POM](./examples/generic-pom-generation.html)
+- [Installing an Artifact to a Specific Local Repository Path](./examples/specific-local-repo.html)
+- [Installing Secondary Artifacts](./examples/installing-secondary-artifacts.html)
