@@ -1,46 +1,34 @@
-  ----
-  Installing an artifact with a custom POM
-  ------
-  Allan Ramirez
-  ------
-  2009-03-22
-  ------
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
 
-~~ Licensed to the Apache Software Foundation (ASF) under one
-~~ or more contributor license agreements.  See the NOTICE file
-~~ distributed with this work for additional information
-~~ regarding copyright ownership.  The ASF licenses this file
-~~ to you under the Apache License, Version 2.0 (the
-~~ "License"); you may not use this file except in compliance
-~~ with the License.  You may obtain a copy of the License at
-~~
-~~   http://www.apache.org/licenses/LICENSE-2.0
-~~
-~~ Unless required by applicable law or agreed to in writing,
-~~ software distributed under the License is distributed on an
-~~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-~~ KIND, either express or implied.  See the License for the
-~~ specific language governing permissions and limitations
-~~ under the License.
+http://www.apache.org/licenses/LICENSE-2.0
 
-~~ NOTE: For help with the syntax of this file, see:
-~~ http://maven.apache.org/doxia/references/apt-format.html
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
 
-Installing an artifact with a custom POM
+# Installing an artifact with a custom POM
 
-  The Apache Maven Install Plugin can include a pre-built custom POM with the artifact
-  in the local repository.  Just set the value of the <<<pomFile>>> parameter
-  to the path of the custom POM.
+The Apache Maven Install Plugin can include a pre-built custom POM with the artifact in the local repository. Just set the value of the `pomFile` parameter to the path of the custom POM.
 
-+---+
+```unknown
 mvn ${project.groupId}:${project.artifactId}:${project.version}:install-file -Dfile=path-to-your-artifact-jar -DpomFile=path-to-pom
-+---+
+```
 
-  If the JAR was built by Apache Maven, it'll contain a pom.xml in a subfolder of the META-INF directory, which will be read by default. In that case, all you need to do is:
+If the JAR was built by Apache Maven, it'll contain a pom.xml in a subfolder of the META-INF directory, which will be read by default. In that case, all you need to do is:
 
-+---+
+```unknown
 mvn ${project.groupId}:${project.artifactId}:${project.version}:install-file -Dfile=<path-to-file>
-+---+
+```
 
-  <<Note>>: By using the fully qualified path of a goal, you're ensured to be using the preferred version of the maven-install-plugin. When using <<<mvn install:install-file>>> 
-  its version depends on its specification in the pom or the version of Apache Maven.
+**Note**: By using the fully qualified path of a goal, you're ensured to be using the preferred version of the maven-install-plugin. When using `mvn install:install-file` its version depends on its specification in the pom or the version of Apache Maven.
