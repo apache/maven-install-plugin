@@ -98,6 +98,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
     }
 
     private static final String INSTALL_PROCESSED_MARKER = InstallMojo.class.getName() + ".processed";
+    private static final String PROJECTS_USING_PLUGIN_KEY = InstallMojo.class.getName() + ".projectsUsingPlugin";
 
     public InstallMojo() {}
 
@@ -118,6 +119,26 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
     private boolean hasState(Project project) {
         Map<String, Object> pluginContext = session.getPluginContext(project);
         return pluginContext.containsKey(INSTALL_PROCESSED_MARKER);
+    }
+
+    /**
+     * Returns the list of reactor projects that have this plugin configured, cached on first call.
+     * The list is invariant during a build and is stored in the current project's plugin
+     * context to avoid recomputing it on every module invocation (O(N) total instead of O(N²)).
+     */
+    @SuppressWarnings("unchecked")
+    private List<Project> getProjectsUsingPlugin() {
+        List<Project> allProjects = session.getProjects();
+        if (allProjects.isEmpty()) {
+            return List.of();
+        }
+        Map<String, Object> ctx = session.getPluginContext(allProjects.get(0));
+        List<Project> cached = (List<Project>) ctx.get(PROJECTS_USING_PLUGIN_KEY);
+        if (cached == null) {
+            cached = allProjects.stream().filter(this::usingPlugin).collect(Collectors.toList());
+            ctx.put(PROJECTS_USING_PLUGIN_KEY, cached);
+        }
+        return cached;
     }
 
     private boolean usingPlugin(Project project) {
@@ -144,8 +165,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
             }
         }
 
-        List<Project> projectsUsingPlugin =
-                session.getProjects().stream().filter(this::usingPlugin).collect(Collectors.toList());
+        List<Project> projectsUsingPlugin = getProjectsUsingPlugin();
         if (allProjectsMarked(projectsUsingPlugin)) {
             for (Project reactorProject : projectsUsingPlugin) {
                 State state = getState(reactorProject);
