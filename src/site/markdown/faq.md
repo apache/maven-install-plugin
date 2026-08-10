@@ -1,4 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
+---
+title: Frequently Asked Questions
+---
 
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
@@ -19,20 +21,15 @@ specific language governing permissions and limitations
 under the License.
 -->
 
+<a id="top"></a>
 
-<faqs xmlns="http://maven.apache.org/FML/1.0.1"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/FML/1.0.1 http://maven.apache.org/xsd/fml-1.0.1.xsd"
-  id="FAQ" title="Frequently Asked Questions">
- <part id="General">
-   <faq id="question">
-     <question>Can I use the <i>install:install-file</i> goal to install artifacts to my remote repository?</question>
-     <answer>
-       <p>
-            No. You need to use
-            <a href="http://maven.apache.org/plugins/maven-deploy-plugin/"><i>deploy:deploy-file</i></a> instead.
-       </p>
-     </answer>
-   </faq>
- </part>
-</faqs>
+# Frequently Asked Questions
+
+1. [Can I use the *install:install-file* goal to install artifacts to my remote repository?](#question)
+
+<a id="question"></a>
+
+### Can I use the *install:install-file* goal to install artifacts to my remote repository?
+
+No. You need to use
+[*deploy:deploy-file*](http://maven.apache.org/plugins/maven-deploy-plugin/) instead.
