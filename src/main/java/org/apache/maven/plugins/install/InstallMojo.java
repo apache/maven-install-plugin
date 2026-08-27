@@ -133,12 +133,14 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
             return List.of();
         }
         Map<String, Object> ctx = session.getPluginContext(allProjects.get(0));
-        List<Project> cached = (List<Project>) ctx.get(PROJECTS_USING_PLUGIN_KEY);
-        if (cached == null) {
-            cached = allProjects.stream().filter(this::usingPlugin).collect(Collectors.toList());
-            ctx.put(PROJECTS_USING_PLUGIN_KEY, cached);
+        synchronized (ctx) {
+            List<Project> cached = (List<Project>) ctx.get(PROJECTS_USING_PLUGIN_KEY);
+            if (cached == null) {
+                cached = allProjects.stream().filter(this::usingPlugin).collect(Collectors.toList());
+                ctx.put(PROJECTS_USING_PLUGIN_KEY, cached);
+            }
+            return cached;
         }
-        return cached;
     }
 
     private boolean usingPlugin(Project project) {
