@@ -38,7 +38,7 @@ under the License.
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
-        <version>@mavenInvokerPluginVersion@</version>
+        <version>@version.maven-invoker-plugin@</version>
       </plugin>
     </plugins>
   </build>

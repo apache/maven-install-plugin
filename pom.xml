@@ -78,25 +78,17 @@
 
     <!-- plugin versions used in IT tests -->
     <guiceVersion>5.1.0</guiceVersion>
-    <junitVersion>5.14.4</junitVersion>
-    <mavenAntrunPluginVersion>3.1.0</mavenAntrunPluginVersion>
-    <mavenCompilerPluginVersion>3.10.1</mavenCompilerPluginVersion>
-    <mavenEnforcerPluginVersion>3.1.0</mavenEnforcerPluginVersion>
-    <mavenInvokerPluginVersion>${version.maven-invoker-plugin}</mavenInvokerPluginVersion>
-    <mavenJarPluginVersion>3.3.0</mavenJarPluginVersion>
-    <mavenPluginPluginVersion>4.0.0-beta-1</mavenPluginPluginVersion>
+    <junitVersion>6.1.3</junitVersion>
     <mavenPluginTestingVersion>4.0.0-beta-4</mavenPluginTestingVersion>
-    <mavenResourcesPluginVersion>3.3.0</mavenResourcesPluginVersion>
-    <mavenSourcePluginVersion>3.2.1</mavenSourcePluginVersion>
-    <mavenSurefirePluginVersion>3.2.2</mavenSurefirePluginVersion>
     <mockitoVersion>5.23.0</mockitoVersion>
     <version.plexus-xml>4.0.1</version.plexus-xml>
-    <version.maven-plugin-tools>${mavenPluginPluginVersion}</version.maven-plugin-tools>
+    <version.maven-plugin-tools>4.0.0-beta-2</version.maven-plugin-tools>
 
-    <!-- TODO remove property maven4x.site.path with next parent -->
-    <maven4x.site.path>plugins-archives/${project.artifactId}-LATEST-4.x</maven4x.site.path>
+    <!-- The minimal Maven version that can build this plugin. The same as in prerequisites -->
+    <minimalMavenBuildVersion>${mavenVersion}</minimalMavenBuildVersion>
+
     <!-- 4.x publish -->
-    <maven.site.path>${maven4x.site.path}</maven.site.path>
+    <maven.site.path.suffix>LATEST-4.x</maven.site.path.suffix>
 
     <project.build.outputTimestamp>2025-02-24T06:30:36Z</project.build.outputTimestamp>
   </properties>
