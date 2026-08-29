@@ -18,6 +18,8 @@
  */
 package org.apache.maven.plugins.install;
 
+import javax.inject.Inject;
+
 import java.io.File;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +33,6 @@ import org.apache.maven.model.PluginExecution;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -51,8 +52,7 @@ import org.eclipse.aether.util.artifact.ArtifactIdUtils;
  */
 @Mojo(name = "install", defaultPhase = LifecyclePhase.INSTALL, threadSafe = true)
 public class InstallMojo extends AbstractMojo {
-    @Component
-    private RepositorySystem repositorySystem;
+    private final RepositorySystem repositorySystem;
 
     @Parameter(defaultValue = "${session}", required = true, readonly = true)
     private MavenSession session;
@@ -93,6 +93,11 @@ public class InstallMojo extends AbstractMojo {
      */
     @Parameter(defaultValue = "false", property = "allowIncompleteProjects")
     private boolean allowIncompleteProjects;
+
+    @Inject
+    public InstallMojo(RepositorySystem repositorySystem) {
+        this.repositorySystem = repositorySystem;
+    }
 
     private enum State {
         SKIPPED,
