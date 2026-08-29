@@ -18,6 +18,8 @@
  */
 package org.apache.maven.plugins.install;
 
+import javax.inject.Inject;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -40,7 +42,6 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.codehaus.plexus.util.StringUtils;
@@ -72,8 +73,7 @@ public class InstallFileMojo extends AbstractMojo {
     private static final String LS = System.lineSeparator();
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    @Component
-    private RepositorySystem repositorySystem;
+    private final RepositorySystem repositorySystem;
 
     @Parameter(defaultValue = "${session}", required = true, readonly = true)
     private MavenSession session;
@@ -176,6 +176,11 @@ public class InstallFileMojo extends AbstractMojo {
     private static final Predicate<String> IS_EMPTY = s -> isNull(s) || s.isEmpty();
 
     private static final Predicate<String> IS_POM_PACKAGING = "pom"::equals;
+
+    @Inject
+    public InstallFileMojo(RepositorySystem repositorySystem) {
+        this.repositorySystem = repositorySystem;
+    }
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
