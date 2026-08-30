@@ -21,15 +21,14 @@ package org.apache.maven.plugins.install;
 import javax.inject.Inject;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
-import org.apache.maven.model.PluginExecution;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
@@ -106,6 +105,7 @@ public class InstallMojo extends AbstractMojo {
     }
 
     private static final String INSTALL_PROCESSED_MARKER = InstallMojo.class.getName() + ".processed";
+    private static final String PROJECTS_USING_PLUGIN_KEY = InstallMojo.class.getName() + ".projectsUsingPlugin";
 
     private void putState(State state) {
         getPluginContext().put(INSTALL_PROCESSED_MARKER, state.name());
@@ -119,6 +119,28 @@ public class InstallMojo extends AbstractMojo {
     private boolean hasState(MavenProject project) {
         Map<String, Object> pluginContext = session.getPluginContext(pluginDescriptor, project);
         return pluginContext.containsKey(INSTALL_PROCESSED_MARKER);
+    }
+
+    /**
+     * Returns the list of reactor projects that have this plugin configured, cached on first call.
+     * The list is invariant during a build and is stored in the current project's plugin
+     * context to avoid recomputing it on every module invocation (O(N) total instead of O(N²)).
+     */
+    @SuppressWarnings("unchecked")
+    private List<MavenProject> getProjectsUsingPlugin() {
+        List<MavenProject> allProjects = session.getProjects();
+        if (allProjects.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Map<String, Object> ctx = session.getPluginContext(pluginDescriptor, allProjects.get(0));
+        return (List<MavenProject>) ctx.computeIfAbsent(
+                PROJECTS_USING_PLUGIN_KEY,
+                k -> allProjects.stream().filter(this::usingPlugin).collect(Collectors.toList()));
+    }
+
+    private boolean usingPlugin(MavenProject project) {
+        Plugin plugin = project.getPlugin("org.apache.maven.plugins:maven-install-plugin");
+        return plugin != null && plugin.getExecutions().stream().anyMatch(e -> !"none".equalsIgnoreCase(e.getPhase()));
     }
 
     @Override
@@ -139,11 +161,10 @@ public class InstallMojo extends AbstractMojo {
             }
         }
 
-        List<MavenProject> allProjectsUsingPlugin = getAllProjectsUsingPlugin();
-
-        if (allProjectsMarked(allProjectsUsingPlugin)) {
+        List<MavenProject> projectsUsingPlugin = getProjectsUsingPlugin();
+        if (allProjectsMarked(projectsUsingPlugin)) {
             InstallRequest request = new InstallRequest();
-            for (MavenProject reactorProject : allProjectsUsingPlugin) {
+            for (MavenProject reactorProject : projectsUsingPlugin) {
                 State state = getState(reactorProject);
                 if (state == State.TO_BE_INSTALLED) {
                     processProject(reactorProject, request);
@@ -153,28 +174,8 @@ public class InstallMojo extends AbstractMojo {
         }
     }
 
-    private boolean allProjectsMarked(List<MavenProject> allProjectsUsingPlugin) {
-        return allProjectsUsingPlugin.stream().allMatch(this::hasState);
-    }
-
-    private final Predicate<MavenProject> hasMavenInstallPluginExecution =
-            rp -> hasExecution(rp.getPlugin("org.apache.maven.plugins:maven-install-plugin"));
-
-    private List<MavenProject> getAllProjectsUsingPlugin() {
-        return session.getProjects().stream()
-                .filter(hasMavenInstallPluginExecution)
-                .collect(Collectors.toList());
-    }
-
-    private final Predicate<PluginExecution> havingGoals = pe -> !pe.getGoals().isEmpty();
-    private final Predicate<PluginExecution> nonePhase = pe -> !"none".equalsIgnoreCase(pe.getPhase());
-
-    private boolean hasExecution(Plugin plugin) {
-        if (plugin == null) {
-            return false;
-        }
-
-        return plugin.getExecutions().stream().filter(havingGoals).anyMatch(nonePhase);
+    private boolean allProjectsMarked(List<MavenProject> projectsUsingPlugin) {
+        return projectsUsingPlugin.stream().allMatch(this::hasState);
     }
 
     private void installProject(InstallRequest request) throws MojoExecutionException {
