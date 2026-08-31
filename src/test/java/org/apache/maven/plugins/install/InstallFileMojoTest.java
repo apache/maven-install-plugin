@@ -19,6 +19,7 @@
 package org.apache.maven.plugins.install;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,6 +29,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.LocalRepository;
@@ -55,6 +58,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.maven.api.plugin.testing.MojoExtension.getBasedir;
 import static org.apache.maven.api.plugin.testing.MojoExtension.getVariableValueFromObject;
+import static org.apache.maven.api.plugin.testing.MojoExtension.setVariableValueToObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -295,6 +299,355 @@ class InstallFileMojoTest {
         assertEquals(
                 LOCAL_REPO,
                 request.getSession().getLocalRepository().getPath().toString().replace(File.separator, "/"));
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void adoptsCoordinatesFromConsistentEmbeddedPom(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        Path jar = createJarWithEntries(
+                pomXml("org.example", "embedded-lib", "1.0"), "META-INF/maven/org.example/embedded-lib/pom.xml");
+        setVariableValueToObject(mojo, "file", jar);
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        assertEquals("org.example", getVariableValueFromObject(mojo, "groupId"));
+        assertEquals("embedded-lib", getVariableValueFromObject(mojo, "artifactId"));
+        assertEquals("1.0", getVariableValueFromObject(mojo, "version"));
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void rejectsEmbeddedPomWithMismatchedEntryPath(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        // decoy entry path does not match the coordinates the embedded POM declares
+        Path jar = createJarWithEntries(
+                pomXml("org.apache.maven.plugins", "maven-clean-plugin", "3.4.0"),
+                "META-INF/maven/org.evil/decoy/pom.xml");
+        setVariableValueToObject(mojo, "file", jar);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("entry path"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void rejectsJarWithMultipleEmbeddedPoms(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        Path jar = createJarWithEntries(
+                pomXml("org.example", "embedded-lib", "1.0"),
+                "META-INF/maven/org.example/embedded-lib/pom.xml",
+                "META-INF/maven/org.other/other-lib/pom.xml");
+        setVariableValueToObject(mojo, "file", jar);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("POM entries"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar!")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void invalidPackagingRejected(InstallFileMojo mojo) {
+        assertNotNull(mojo);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("not valid"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void embeddedPomIgnoredWhenFullCoordinatesSupplied(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        assignValuesForParameter(mojo);
+        // hostile embedded POM carrying a foreign GAV and an injected dependency
+        String evilPom = "<project>" + "<modelVersion>4.0.0</modelVersion>"
+                + "<groupId>com.evil</groupId>"
+                + "<artifactId>injected</artifactId>"
+                + "<version>9.9</version>"
+                + "<packaging>jar</packaging>"
+                + "<dependencies><dependency>"
+                + "<groupId>com.evil</groupId><artifactId>backdoor</artifactId><version>1.0</version>"
+                + "</dependency></dependencies>"
+                + "</project>";
+        Path jar = createJarWithEntries(evilPom, "META-INF/maven/com.evil/injected/pom.xml");
+        setVariableValueToObject(mojo, "file", jar);
+
+        AtomicReference<Model> model = new AtomicReference<>();
+        ArtifactInstallerRequest request = execute(mojo, air -> model.set(readModel(getArtifact(null, "pom"))));
+
+        assertNotNull(request);
+        // the installed POM is the generated minimal POM at the CLI coordinates, not the embedded one
+        assertEquals("org.apache.maven.test", model.get().getGroupId());
+        assertEquals("maven-install-file-test", model.get().getArtifactId());
+        assertEquals("1.0-SNAPSHOT", model.get().getVersion());
+        assertTrue(model.get().getDependencies().isEmpty());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void mismatchedEmbeddedPomRejectedWhenPackagingOmitted(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        // packaging omitted, so the embedded POM is consulted; the attacker POM is internally
+        // consistent (entry path matches its own declared GAV) but disagrees with the supplied
+        // coordinates — it must not be installed verbatim at those coordinates
+        Path jar =
+                createJarWithEntries(pomXml("com.evil", "injected", "9.9"), "META-INF/maven/com.evil/injected/pom.xml");
+        setVariableValueToObject(mojo, "file", jar);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("does not match the supplied coordinates"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void matchingEmbeddedPomAcceptedWhenPackagingOmitted(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        // packaging omitted; the embedded POM agrees with every supplied coordinate, so it may be
+        // used and contribute the missing packaging
+        Path jar = createJarWithEntries(
+                pomXml("org.apache.maven.test", "maven-install-file-test", "1.0-SNAPSHOT"),
+                "META-INF/maven/org.apache.maven.test/maven-install-file-test/pom.xml");
+        setVariableValueToObject(mojo, "file", jar);
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        assertEquals("jar", getVariableValueFromObject(mojo, "packaging"));
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void rejectsEmbeddedPomWithDoctype(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        String xxePom = "<?xml version=\"1.0\"?>"
+                + "<!DOCTYPE project [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]>"
+                + pomXml("org.example", "embedded-lib", "1.0");
+        Path jar = createJarWithEntries(xxePom, "META-INF/maven/org.example/embedded-lib/pom.xml");
+        setVariableValueToObject(mojo, "file", jar);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("DOCTYPE"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void rejectsEmbeddedPomWithDoctypeUtf16Le(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        String xxePom = "<?xml version=\"1.0\"?>"
+                + "<!DOCTYPE project [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]>"
+                + pomXml("org.example", "embedded-lib", "1.0");
+        // BOM-prefixed UTF-16LE: interleaved NUL bytes defeat a single-byte substring scan
+        byte[] bytes = ("\uFEFF" + xxePom).getBytes(StandardCharsets.UTF_16LE);
+        Path jar = createJarWithEntryBytes(bytes, "META-INF/maven/org.example/embedded-lib/pom.xml");
+        setVariableValueToObject(mojo, "file", jar);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("DOCTYPE"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void rejectsEmbeddedPomWithDoctypeUtf16Be(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        String xxePom = "<?xml version=\"1.0\"?>"
+                + "<!DOCTYPE project [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]>"
+                + pomXml("org.example", "embedded-lib", "1.0");
+        // BOM-prefixed UTF-16BE
+        byte[] bytes = ("\uFEFF" + xxePom).getBytes(StandardCharsets.UTF_16BE);
+        Path jar = createJarWithEntryBytes(bytes, "META-INF/maven/org.example/embedded-lib/pom.xml");
+        setVariableValueToObject(mojo, "file", jar);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("DOCTYPE"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void rejectsEmbeddedPomWithDoctypeEbcdicIbm500(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        String xxePom = "<?xml version=\"1.0\" encoding=\"IBM500\"?>"
+                + "<!DOCTYPE project [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]>"
+                + pomXml("org.example", "embedded-lib", "1.0");
+        // IBM500 and IBM037 disagree on the EBCDIC variant byte for '!': a screen that decodes the
+        // whole document as IBM037 sees "<|DOCTYPE" and misses the DTD. The declared code page must win.
+        byte[] bytes = xxePom.getBytes(java.nio.charset.Charset.forName("IBM500"));
+        Path jar = createJarWithEntryBytes(bytes, "META-INF/maven/org.example/embedded-lib/pom.xml");
+        setVariableValueToObject(mojo, "file", jar);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("DOCTYPE"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void rejectsEmbeddedPomWithDeclPaddedPastSniffPrefix(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        // Declaration whitespace is unbounded: pad the ASCII declaration so 'encoding="IBM037"' and
+        // '?>' sit past the 1024-byte sniff prefix, then append an IBM037 body carrying the DOCTYPE.
+        // A fail-open UTF-8 default screens the wrong charset and misses the DTD that a
+        // declaration-honoring parser would decode; the screen must fail closed instead.
+        StringBuilder decl = new StringBuilder("<?xml version=\"1.0\"");
+        for (int i = 0; i < 1100; i++) {
+            decl.append(' ');
+        }
+        decl.append("encoding=\"IBM037\"?>");
+        String body = "<!DOCTYPE project [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]>"
+                + pomXml("org.example", "embedded-lib", "1.0");
+        byte[] declBytes = decl.toString().getBytes(StandardCharsets.US_ASCII);
+        byte[] bodyBytes = body.getBytes(java.nio.charset.Charset.forName("IBM037"));
+        byte[] bytes = new byte[declBytes.length + bodyBytes.length];
+        System.arraycopy(declBytes, 0, bytes, 0, declBytes.length);
+        System.arraycopy(bodyBytes, 0, bytes, declBytes.length, bodyBytes.length);
+        Path jar = createJarWithEntryBytes(bytes, "META-INF/maven/org.example/embedded-lib/pom.xml");
+        setVariableValueToObject(mojo, "file", jar);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("DOCTYPE"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = ".tmp.evil")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void groupIdWithLeadingDotRejected(InstallFileMojo mojo) {
+        assertNotNull(mojo);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("not valid"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org..evil")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void groupIdWithConsecutiveDotsRejected(InstallFileMojo mojo) {
+        assertNotNull(mojo);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("not valid"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "..")
+    @MojoParameter(name = "version", value = "1.0-SNAPSHOT")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void dotDotArtifactIdRejected(InstallFileMojo mojo) {
+        assertNotNull(mojo);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("not valid"), e.getMessage());
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.test")
+    @MojoParameter(name = "artifactId", value = "maven-install-file-test")
+    @MojoParameter(name = "version", value = "..")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void dotDotVersionRejected(InstallFileMojo mojo) {
+        assertNotNull(mojo);
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("not valid"), e.getMessage());
+    }
+
+    private static Path createJarWithEntries(String pomContent, String... entryNames) throws Exception {
+        Path jar = Files.createTempFile("maven-install-file-test", ".jar");
+        try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(jar))) {
+            for (String entryName : entryNames) {
+                jos.putNextEntry(new JarEntry(entryName));
+                jos.write(pomContent.getBytes(StandardCharsets.UTF_8));
+                jos.closeEntry();
+            }
+        }
+        return jar;
+    }
+
+    private static Path createJarWithEntryBytes(byte[] pomContent, String entryName) throws Exception {
+        Path jar = Files.createTempFile("maven-install-file-test", ".jar");
+        try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(jar))) {
+            jos.putNextEntry(new JarEntry(entryName));
+            jos.write(pomContent);
+            jos.closeEntry();
+        }
+        return jar;
+    }
+
+    private static String pomXml(String groupId, String artifactId, String version) {
+        return "<project>" + "<modelVersion>4.0.0</modelVersion>"
+                + "<groupId>" + groupId + "</groupId>"
+                + "<artifactId>" + artifactId + "</artifactId>"
+                + "<version>" + version + "</version>"
+                + "<packaging>jar</packaging>"
+                + "</project>";
     }
 
     private void assignValuesForParameter(Object obj) throws Exception {
