@@ -19,11 +19,14 @@
 package org.apache.maven.plugins.install;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.maven.api.Artifact;
@@ -35,6 +38,10 @@ import org.apache.maven.api.di.Named;
 import org.apache.maven.api.di.Priority;
 import org.apache.maven.api.di.Provides;
 import org.apache.maven.api.di.Singleton;
+import org.apache.maven.api.model.Build;
+import org.apache.maven.api.model.Plugin;
+import org.apache.maven.api.model.PluginExecution;
+import org.apache.maven.api.plugin.Log;
 import org.apache.maven.api.plugin.Mojo;
 import org.apache.maven.api.plugin.MojoException;
 import org.apache.maven.api.plugin.testing.InjectMojo;
@@ -61,8 +68,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @MojoTest
@@ -159,6 +173,109 @@ class InstallMojoTest {
         mojo.setSkip(true);
 
         assertNull(execute(mojo));
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    void usingPluginMatchesAnyExecutionId(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        // a module binding the goal under a custom execution id must not observe a singleton
+        // project set and install mid-build (broken all-or-nothing contract)
+        assertTrue(invokeUsingPlugin(mojo, projectUsingInstallPlugin("custom-install-id", "install")));
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    void usingPluginIgnoresExecutionsBoundToNone(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        assertFalse(invokeUsingPlugin(mojo, projectUsingInstallPlugin("default-install", "none")));
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    void midLoopFailureLogsPartialInstallInventory(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        setVariableValueToObject(mojo, "session", session);
+        Log log = mock(Log.class);
+        setVariableValueToObject(mojo, "log", log);
+        mojo.setSkip(true);
+
+        Project moduleA = reactorProject("module-a");
+        Project moduleB = reactorProject("module-b");
+        ArtifactInstallerRequest requestA = mock(ArtifactInstallerRequest.class);
+        ArtifactInstallerRequest requestB = mock(ArtifactInstallerRequest.class);
+        when(session.getProjects()).thenReturn(Arrays.asList(moduleA, moduleB));
+        when(session.getPluginContext(moduleA)).thenReturn(deferredContext(requestA));
+        when(session.getPluginContext(moduleB)).thenReturn(deferredContext(requestB));
+        doThrow(new MojoException("install failed")).when(artifactInstaller).install(requestB);
+
+        assertThrows(MojoException.class, mojo::execute);
+
+        verify(log, atLeastOnce()).error(contains("partially installed state"));
+        verify(log).error(contains("installed: org.apache.maven.test:module-a:1.0-SNAPSHOT"));
+        verify(log).error(contains("failed: org.apache.maven.test:module-b:1.0-SNAPSHOT"));
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    void deferredInstallRunsExactlyOncePerProject(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        setVariableValueToObject(mojo, "session", session);
+        setVariableValueToObject(mojo, "log", mock(Log.class));
+        mojo.setSkip(true);
+
+        Project moduleA = reactorProject("module-a");
+        Project moduleB = reactorProject("module-b");
+        when(session.getProjects()).thenReturn(Arrays.asList(moduleA, moduleB));
+        when(session.getPluginContext(moduleA)).thenReturn(deferredContext(mock(ArtifactInstallerRequest.class)));
+        when(session.getPluginContext(moduleB)).thenReturn(deferredContext(mock(ArtifactInstallerRequest.class)));
+
+        // first trigger runs the deferred loop for both projects...
+        mojo.execute();
+        // ...a repeated trigger in the same session (e.g. `mvn install install`) must not re-install
+        mojo.execute();
+
+        verify(artifactInstaller, times(2)).install(any(ArtifactInstallerRequest.class));
+    }
+
+    private Project reactorProject(String artifactId) {
+        Project project = mock(Project.class);
+        when(project.getBuild()).thenReturn(installPluginBuild("default-install", "install"));
+        when(project.getGroupId()).thenReturn("org.apache.maven.test");
+        when(project.getArtifactId()).thenReturn(artifactId);
+        when(project.getVersion()).thenReturn("1.0-SNAPSHOT");
+        return project;
+    }
+
+    private static Map<String, Object> deferredContext(ArtifactInstallerRequest request) {
+        Map<String, Object> pluginContext = new HashMap<>();
+        pluginContext.put(InstallMojo.class.getName() + ".processed", "TO_BE_INSTALLED");
+        pluginContext.put(ArtifactInstallerRequest.class.getName(), request);
+        return pluginContext;
+    }
+
+    private static Project projectUsingInstallPlugin(String executionId, String phase) {
+        Project project = mock(Project.class);
+        when(project.getBuild()).thenReturn(installPluginBuild(executionId, phase));
+        return project;
+    }
+
+    private static Build installPluginBuild(String executionId, String phase) {
+        Plugin plugin = Plugin.newBuilder()
+                .groupId("org.apache.maven.plugins")
+                .artifactId("maven-install-plugin")
+                .executions(Collections.singletonList(PluginExecution.newBuilder()
+                        .id(executionId)
+                        .phase(phase)
+                        .build()))
+                .build();
+        return Build.newBuilder().plugins(Collections.singletonList(plugin)).build();
+    }
+
+    private static boolean invokeUsingPlugin(InstallMojo mojo, Project project) throws Exception {
+        Method usingPlugin = InstallMojo.class.getDeclaredMethod("usingPlugin", Project.class);
+        usingPlugin.setAccessible(true);
+        return (Boolean) usingPlugin.invoke(mojo, project);
     }
 
     @Provides
