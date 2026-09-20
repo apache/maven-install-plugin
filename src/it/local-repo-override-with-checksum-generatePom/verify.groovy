@@ -21,21 +21,19 @@ import java.io.*;
 import java.util.*;
 import java.lang.*;
 
-import org.apache.maven.plugins.install.Utils;
-
 String[] paths =
-{
+[
     "gid/test/0.1/test-0.1.jar",
     "gid/test/0.1/test-0.1.pom",
-};
+];
 
 String[] pathsWhichShouldNotExist =
-{
+[
     "gid/test/0.1/test-0.1.jar.md5",
     "gid/test/0.1/test-0.1.jar.sha1",
     "gid/test/0.1/test-0.1.pom.md5",
     "gid/test/0.1/test-0.1.pom.sha1",
-};
+];
 
 for ( String path : paths )
 {

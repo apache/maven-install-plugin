@@ -21,9 +21,9 @@ import java.io.*;
 import java.util.*;
 
 String[] paths =
-{
+[
     "gid/test/0.1/test-0.1.jar",
-};
+];
 
 for ( String path : paths )
 {
