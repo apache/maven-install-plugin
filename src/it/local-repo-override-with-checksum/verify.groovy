@@ -21,18 +21,16 @@ import java.io.*;
 import java.util.*;
 import java.lang.*;
 
-import org.apache.maven.plugins.install.Utils;
-
 String[] paths =
-{
+[
     "gid/test/0.1/test-0.1.jar",
-};
+];
 
 String[] pathsWhichAreNotAllowedToBeThere =
-{
+[
     "gid/test/0.1/test-0.1.jar.md5",
     "gid/test/0.1/test-0.1.jar.sha1",
-};
+];
 
 for ( String path : pathsWhichAreNotAllowedToBeThere )
 {
