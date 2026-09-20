@@ -21,11 +21,11 @@ import java.io.*;
 import java.util.*;
 
 String[] paths =
-{
+[
     "org/apache/maven/its/install/121/test-targz/maven-metadata-local.xml",
     "org/apache/maven/its/install/121/test-targz/1.0/test-targz-1.0.pom",
     "org/apache/maven/its/install/121/test-targz/1.0/test-targz-1.0.tar.gz", // this test is totally fluke: deploy POM.packaging=war and main artifact tar.gz
-};
+];
 
 for ( String path : paths )
 {
@@ -43,7 +43,7 @@ if ( !file.isFile() )
     throw new FileNotFoundException( "Missing: " + file.getAbsolutePath() );
 }
 
-File file = new File( basedir, "test-0.1.tar.gz" );
+file = new File( basedir, "test-0.1.tar.gz" );
 if ( !file.isFile() )
 {
     throw new FileNotFoundException( "Missing: " + file.getAbsolutePath() );
