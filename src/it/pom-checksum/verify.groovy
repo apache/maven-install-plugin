@@ -21,20 +21,18 @@ import java.io.*;
 import java.util.*;
 import java.lang.*;
 
-import org.apache.maven.plugins.install.Utils;
-
 String[] paths =
-{
+[
     "org/apache/maven/its/install/pc/test/1.0-SNAPSHOT/test-1.0-SNAPSHOT.pom",
     "org/apache/maven/its/install/pc/test/1.0-SNAPSHOT/maven-metadata-local.xml",
     "org/apache/maven/its/install/pc/test/maven-metadata-local.xml",
-};
+];
 
 String[] pathsWhichShouldNotExist =
-{
+[
     "org/apache/maven/its/install/pc/test/1.0-SNAPSHOT/test-1.0-SNAPSHOT.pom.md5",
     "org/apache/maven/its/install/pc/test/1.0-SNAPSHOT/test-1.0-SNAPSHOT.pom.sha1",
-};
+];
 
 for ( String path : paths )
 {

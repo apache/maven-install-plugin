@@ -21,19 +21,17 @@ import java.io.*;
 import java.util.*;
 import java.lang.*;
 
-import org.apache.maven.plugins.install.Utils;
-
 String[] paths =
-{
+[
     "org/apache/maven/its/install/jsj/test/maven-metadata-local.xml",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1.jar",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1.pom",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1-sources.jar",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1-javadoc.jar",
-};
+];
 
 String[] pathsWhichShouldNotExist =
-{
+[
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1.jar.md5",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1.jar.sha1",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1.pom.md5",
@@ -42,7 +40,7 @@ String[] pathsWhichShouldNotExist =
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1-sources.jar.sha1",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1-javadoc.jar.md5",
     "org/apache/maven/its/install/jsj/test/0.1/test-0.1-javadoc.jar.sha1",
-};
+];
 
 for ( String path : paths )
 {

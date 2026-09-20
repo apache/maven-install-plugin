@@ -20,20 +20,17 @@
 import java.io.*;
 import java.util.*;
 
-import org.apache.maven.plugins.install.Utils;
-
 String[] paths =
-{
+[
     "org/apache/maven/its/install/gpa1/test/maven-metadata-local.xml",
     "org/apache/maven/its/install/gpa1/test/0.1/test-0.1.jar",
     "org/apache/maven/its/install/gpa1/test/0.1/test-0.1.pom",
-};
+];
 
-Set cksumToCheckPaths = new HashSet( Arrays.asList( new String[]
-{
+Set cksumToCheckPaths = new HashSet( Arrays.asList( [
     "org/apache/maven/its/install/gpa1/test/0.1/test-0.1.jar",
     "org/apache/maven/its/install/gpa1/test/0.1/test-0.1.pom",
-} ) );
+] as String[] ) );
 
 for ( String path : paths )
 {
