@@ -26,7 +26,9 @@ under the License.
 
 # Generating a generic POM
 
-There are times when you do not have a POM for a 3rd party artifact. For instance, when installing a proprietary or commercial JAR into a repository. The Install Plugin can create a generic POM in this case which contains the minimal set of POM elements required by Maven, such as groupId, artifactId, version, packaging. You tell Maven to generate a POM by setting the `generatePom` parameter to `true`.
+Sometimes you do not have a POM for a third-party artifact. This happens, for example, when you install a proprietary or commercial JAR. The Install Plugin can create a generic POM for such an artifact. The generic POM contains the minimal set of POM elements that Maven requires, such as groupId, artifactId, version, and packaging.
+
+Set the `generatePom` parameter to `true`. Maven will then generate the POM.
 
 ```unknown
 mvn ${project.groupId}:${project.artifactId}:${project.version}:install-file  -Dfile=path-to-your-artifact-jar \
@@ -37,4 +39,4 @@ mvn ${project.groupId}:${project.artifactId}:${project.version}:install-file  -D
                                                                               -DgeneratePom=true
 ```
 
-**Note**: By using the fully qualified path of a goal, you're ensured to be using the preferred version of the maven-install-plugin. When using `mvn install:install-file` its version depends on its specification in the pom or the version of Apache Maven.
+**Note**: Use the fully qualified path of a goal. This ensures that you use the preferred version of the maven-install-plugin. When you use `mvn install:install-file`, the plugin version depends on the POM or the Apache Maven version.

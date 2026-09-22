@@ -27,13 +27,15 @@ under the License.
 
 # Usage
 
-Apache Maven has a two level strategy to resolve and distribute files, which we call artifacts. The first level is called the `local repository`, which is the artifact cache on your system, by default located at `${user.home}/.m2/repository`. When executing Maven, it first looks in this local cache for artifacts. If the artifact cannot be found here, Maven will access the remote repositories to find the artifact. Once found it will be stored into the local repository, so it's available for current and future usage.
+Apache Maven has a two-level strategy to resolve and distribute files. These files are the artifacts. The `local repository` is the first level. It is the artifact cache on your system. The default location is `${user.home}/.m2/repository`. Maven looks in the local cache for artifacts first.
 
-With the `maven-install-plugin` you can put your artifacts in the local repository. To upload artifacts to a remote repository, you need to use the [maven-deploy-plugin](http://maven.apache.org/plugins/maven-deploy-plugin/).
+If Maven cannot find an artifact, it will access the remote repositories. Maven stores the artifact in the local repository once it finds it. The artifact is then available for current and future usage.
+
+With the `maven-install-plugin`, you can put your artifacts in the local repository. To upload artifacts to a remote repository, use the [maven-deploy-plugin](http://maven.apache.org/plugins/maven-deploy-plugin/).
 
 ## The `install:install` goal
 
-In most cases, `install:install` goal doesn't need any configuration, it needs the project's POM and the artifact file to be installed during the `install` phase of the default build lifecycle.
+In most cases, the `install:install` goal needs no configuration. It needs the project POM and the artifact file. It runs during the `install` phase of the default build lifecycle.
 
 ```unknown
 mvn install
@@ -41,7 +43,7 @@ mvn install
 
 ## The `install:install-file` goal
 
-The `install:install-file` goal is used primarily for installing artifacts to the local repository which were not built by Maven. The project's development team may or may not provide a POM for the artifact. Here's a list of some of the available parameters for the `install-file` goal:
+The `install:install-file` goal installs artifacts that Maven did not build into the local repository. The development team can provide a POM for the artifact. The POM is not required. The following list shows the available parameters for the `install-file` goal:
 
 ```unknown
 mvn install:install-file -Dfile=your-artifact-1.0.jar \
@@ -57,5 +59,5 @@ mvn install:install-file -Dfile=your-artifact-1.0.jar \
                          [-DcreateChecksum=true]
 ```
 
-- the groupId, artifactId, version and packaging of the file to install. These can be taken from the specified pomFile, extracted from the pom.xml inside the artifact, and overridden or specified using the command line. When the pomFile contains a _parent_ section, the parent's groupId can be considered if the groupId is not specified further for the current project or on the command line.
-- the optional `classifier` parameter can be used to [install secondary artifacts](./examples/installing-secondary-artifacts.html) for a project, like a `javadoc` or `sources` JAR. If a classifier is not given, Maven assumes the file is the main artifact for the project.
+- The groupId, artifactId, version, and packaging parameters define the file to install. You can get these values from the pomFile parameter, from the pom.xml inside the artifact, or from the command line. If you do not specify the groupId for the current project or on the command line, Maven uses the parent groupId. This only applies when the pomFile contains a _parent_ section.
+- The optional `classifier` parameter installs a secondary artifact, for example a `javadoc` or `sources` JAR. See [Installing Secondary Artifacts](./examples/installing-secondary-artifacts.html) for more information. If you do not give a classifier, Maven treats the file as the main artifact.

@@ -25,32 +25,37 @@ under the License.
 -->
 
 # Apache Maven Install Plugin
-The Install Plugin is used during the `install` phase to add artifact(s) to the local repository. The Install Plugin uses the information in the POM (groupId, artifactId, version) to determine the proper location for the artifact within the local repository.
+The Install Plugin adds artifacts to the local repository during the `install` phase. It uses the POM data to find the correct location in the local repository. The POM data includes the `groupId`, the `artifactId`, and the `version`.
 
-The local repository is the local cache where all artifacts needed for the build are stored. By default, it is located within the user's home directory `(~/.m2/repository)` but the location can be configured in `~/.m2/settings.xml` using the `<localRepository>` element.
+The local repository is the local cache for the artifacts in a build. It is in the user's home directory `(~/.m2/repository)` by default.
+
+You can change the location with the `<localRepository>` element in `~/.m2/settings.xml`.
 
 ## Goals Overview
 
 The Install Plugin has 3 goals:
 
-- [install:install](./install-mojo.html) is used to automatically install the project's main artifact (the JAR, WAR or EAR), its POM and any attached artifacts (sources, javadoc, etc) produced by a particular project.
-- [install:install-file](./install-file-mojo.html) is mostly used to install an externally created artifact into the local repository, along with its POM. In that case the project information can be taken from an optionally specified pomFile, but can also be given using command line parameters.
-- [install:help](./help-mojo.html) displays help information on maven-install-plugin.
+- [install:install](./install-mojo.html) installs the main artifact of the project. It also installs the project POM and the attached artifacts such as `sources` and `javadoc` JARs.
+- [install:install-file](./install-file-mojo.html) installs an externally created artifact and its POM into the local repository. You can provide the artifact data with the `pomFile` parameter or with command line parameters.
+- [install:help](./help-mojo.html) displays help information on the maven-install-plugin.
+
 ## Important Note for Version 3.0.0+
 
-The [install:install](./install-mojo.html) goal no longer supports creating checksums via `-DcreateChecksum=true`. Details can be found in [MINSTALL-143](https://issues.apache.org/jira/browse/MINSTALL-143).
+The [install:install](./install-mojo.html) goal no longer creates checksums with the `-DcreateChecksum=true` parameter. For details, see [MINSTALL-143](https://issues.apache.org/jira/browse/MINSTALL-143).
 
 ## Usage
 
-General instructions for using the Install Plugin can be found on the [usage page](./usage.html). Some more specific use cases are described in the examples given below.
+See the [usage page](./usage.html) for general instructions. See the examples below for specific use cases.
 
-If you have questions about the plugin's usage, read the [FAQ](./faq.html) and feel free to contact the [user mailing list](./mailing-lists.html). Posts to the mailing list are archived and could already contain the answer to your question as part of an older thread. Hence, it is also worth browsing/searching the [mail archive](./mailing-lists.html).
+If you have a question, read the [FAQ](./faq.html) first. Contact the [user mailing list](./mailing-lists.html) if you need more help. The mailing list stores old posts. An old thread can contain the answer to your question. Also browse the [mail archive](./mailing-lists.html).
 
-If you think the plugin is missing a feature or has a defect, you can file a feature request or bug report in our [issue tracker](./issue-management.html). When creating a new issue, please provide a comprehensive description of your concern. Especially for fixing bugs it is crucial that the developers can reproduce your problem. For this reason, entire debug logs, POMs or most preferably little demo projects attached to the issue are very much appreciated. Of course, patches are welcome, too. Contributors can check out the project from our [source repository](./scm.html) and will find supplementary information in the [guide to helping with Maven](http://maven.apache.org/guides/development/guide-helping.html).
+If the plugin is missing a feature, file a feature request. If the plugin has a defect, file a bug report. Use the [issue tracker](./issue-management.html) to file requests and reports. Describe your problem in detail. For bug fixes, the developers must reproduce your problem. Attach debug logs, POMs, or a small demo project to the issue.
+
+Attach a patch to the issue if you have one. You can check out the project from the [source repository](./scm.html). Read the [guide to helping with Maven](http://maven.apache.org/guides/development/guide-helping.html) for more information.
 
 ## Examples
 
-To provide you with a better understanding of some usages of the Maven Install Plugin, you can take a look into the following examples:
+The following examples show some usages of the Maven Install Plugin:
 
 - [Installing a Custom POM](./examples/custom-pom-installation.html)
 - [Generating a Generic POM](./examples/generic-pom-generation.html)

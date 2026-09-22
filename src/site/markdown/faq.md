@@ -31,5 +31,4 @@ under the License.
 
 ### Can I use the *install:install-file* goal to install artifacts to my remote repository?
 
-No. You need to use
-[*deploy:deploy-file*](http://maven.apache.org/plugins/maven-deploy-plugin/) instead.
+No. Use the [*deploy:deploy-file*](http://maven.apache.org/plugins/maven-deploy-plugin/) goal instead.
