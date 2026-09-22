@@ -1,0 +1,60 @@
+---
+title: Usage
+author: 
+  - Allan Ramirez
+  - Robert Scholte
+date: 2013-07-20
+---
+
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+# Usage
+
+Apache Maven has a two level strategy to resolve and distribute files, which we call artifacts. The first level is called the `local repository`, which is the artifact cache on your system, by default located at `${user.home}/.m2/repository`. When executing Maven, it first looks in this local cache for artifacts. If the artifact cannot be found here, Maven will access the remote repositories to find the artifact. Once found it will be stored into the local repository, so it's available for current and future usage.
+
+With the `maven-install-plugin` you can put your artifacts in the local repository. To upload artifacts to a remote repository, you need to use the [maven-deploy-plugin](http://maven.apache.org/plugins/maven-deploy-plugin/).
+
+## The `install:install` goal
+
+In most cases, the `install:install` goal doesn't need any configuration. It needs the project's POM and the artifact file to be installed during the `install` phase of the default build lifecycle.
+
+```unknown
+mvn install
+```
+
+## The `install:install-file` goal
+
+The `install:install-file` goal is used primarily to install artifacts in the local repository which were not built by Maven. The project's development team may or may not provide a POM for the artifact. Here's a list of some of the available parameters for the `install-file` goal:
+
+```unknown
+mvn install:install-file -Dfile=your-artifact-1.0.jar \
+                         [-DpomFile=your-pom.xml] \
+                         [-Dsources=src.jar] \
+                         [-Djavadoc=apidocs.jar] \
+                         [-DgroupId=org.some.group] \
+                         [-DartifactId=your-artifact] \
+                         [-Dversion=1.0] \
+                         [-Dpackaging=jar] \
+                         [-Dclassifier=sources] \
+                         [-DgeneratePom=true]
+```
+
+- the groupId, artifactId, version and packaging of the file to install. These can be taken from the specified pomFile, extracted from the pom.xml inside the artifact, and overridden or specified using the command line; when the pomFile contains a _parent_ section, the parent's groupId can be considered if the groupId is not specified further for the current project or on the command line.
+- the optional `classifier` parameter can be used to [install secondary artifacts](./examples/installing-secondary-artifacts.html) for a project, like a `javadoc` or `sources` JAR. If a classifier is not given, Maven assumes the file is the main artifact for the project.

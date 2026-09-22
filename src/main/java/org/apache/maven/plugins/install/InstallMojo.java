@@ -19,14 +19,13 @@
 package org.apache.maven.plugins.install;
 
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.maven.api.Artifact;
-import org.apache.maven.api.MojoExecution;
 import org.apache.maven.api.ProducedArtifact;
 import org.apache.maven.api.Project;
 import org.apache.maven.api.Session;
@@ -57,12 +56,11 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
     @Inject
     private Project project;
 
-    @Inject
-    private MojoExecution mojoExecution;
-
     /**
      * Whether every project should be installed during its own install-phase or at the end of the multimodule build. If
-     * set to {@code true} and the build fails, none of the reactor projects is installed.
+     * set to {@code true} and the build fails before the deferred installation has started, none of the reactor
+     * projects is installed. If a failure occurs during the deferred installation itself, an explicit inventory of the
+     * projects already installed and those skipped is logged.
      * <strong>(experimental)</strong>
      *
      * @since 2.5
@@ -98,6 +96,15 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
     }
 
     private static final String INSTALL_PROCESSED_MARKER = InstallMojo.class.getName() + ".processed";
+    private static final String PROJECTS_USING_PLUGIN_KEY = InstallMojo.class.getName() + ".projectsUsingPlugin";
+
+    /**
+     * Guards the mark-check-fire sequence of the deferred ({@code installAtEnd}) install: without it, two
+     * modules finishing simultaneously in a parallel build ({@code -T}) can both observe "all projects
+     * marked" and each run the full deferred-install loop. The plugin classloader (and therefore this lock)
+     * is shared across all reactor threads of a build.
+     */
+    private static final Object DEFERRED_INSTALL_LOCK = new Object();
 
     public InstallMojo() {}
 
@@ -110,6 +117,10 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
         session.getPluginContext(project).put(ArtifactInstallerRequest.class.getName(), request);
     }
 
+    private void putState(Project project, State state) {
+        session.getPluginContext(project).put(INSTALL_PROCESSED_MARKER, state.name());
+    }
+
     private State getState(Project project) {
         Map<String, Object> pluginContext = session.getPluginContext(project);
         return State.valueOf((String) pluginContext.get(INSTALL_PROCESSED_MARKER));
@@ -120,12 +131,33 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
         return pluginContext.containsKey(INSTALL_PROCESSED_MARKER);
     }
 
+    /**
+     * Returns the list of reactor projects that have this plugin configured, cached on first call.
+     * The list is invariant during a build and is stored in the current project's plugin
+     * context to avoid recomputing it on every module invocation (O(N) total instead of O(N²)).
+     */
+    @SuppressWarnings("unchecked")
+    private List<Project> getProjectsUsingPlugin() {
+        List<Project> allProjects = session.getProjects();
+        if (allProjects.isEmpty()) {
+            return List.of();
+        }
+        Map<String, Object> ctx = session.getPluginContext(allProjects.get(0));
+        return (List<Project>) ctx.computeIfAbsent(
+                PROJECTS_USING_PLUGIN_KEY,
+                k -> allProjects.stream().filter(this::usingPlugin).collect(Collectors.toList()));
+    }
+
+    /**
+     * Whether the given reactor project takes part in the deferred install. Grouping is by plugin presence
+     * (any execution not bound to phase {@code none}), not by execution-id equality: matching only the current
+     * execution's id would let a module binding the goal under a custom id observe a singleton project set,
+     * trivially satisfy {@link #allProjectsMarked(List)}, and install mid-build, breaking the all-or-nothing
+     * contract documented on {@link #installAtEnd}.
+     */
     private boolean usingPlugin(Project project) {
         Plugin plugin = project.getBuild().getPluginsAsMap().get("org.apache.maven.plugins:maven-install-plugin");
-        return plugin != null
-                && plugin.getExecutions().stream()
-                        .anyMatch(e -> Objects.equals(e.getId(), mojoExecution.getExecutionId())
-                                && !"none".equals(e.getPhase()));
+        return plugin != null && plugin.getExecutions().stream().anyMatch(e -> !"none".equals(e.getPhase()));
     }
 
     @Override
@@ -144,19 +176,54 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
             }
         }
 
-        List<Project> projectsUsingPlugin =
-                session.getProjects().stream().filter(this::usingPlugin).collect(Collectors.toList());
-        if (allProjectsMarked(projectsUsingPlugin)) {
-            for (Project reactorProject : projectsUsingPlugin) {
-                State state = getState(reactorProject);
-                if (state == State.TO_BE_INSTALLED) {
-                    Map<String, Object> pluginContext = session.getPluginContext(reactorProject);
-                    ArtifactInstallerRequest request =
-                            (ArtifactInstallerRequest) pluginContext.get(ArtifactInstallerRequest.class.getName());
-                    installProject(request);
+        List<Project> projectsUsingPlugin = getProjectsUsingPlugin();
+        synchronized (DEFERRED_INSTALL_LOCK) {
+            if (allProjectsMarked(projectsUsingPlugin)) {
+                List<Project> installedProjects = new ArrayList<>();
+                for (Project reactorProject : projectsUsingPlugin) {
+                    State state = getState(reactorProject);
+                    if (state == State.TO_BE_INSTALLED) {
+                        Map<String, Object> pluginContext = session.getPluginContext(reactorProject);
+                        ArtifactInstallerRequest request =
+                                (ArtifactInstallerRequest) pluginContext.get(ArtifactInstallerRequest.class.getName());
+                        try {
+                            installProject(request);
+                        } catch (MojoException e) {
+                            logPartialInstallInventory(projectsUsingPlugin, installedProjects, reactorProject);
+                            throw e;
+                        }
+                        installedProjects.add(reactorProject);
+                        // exactly-once: transition state so a concurrent or repeated trigger (parallel
+                        // build, or a second execution of the goal in the same session) skips completed work
+                        putState(reactorProject, State.INSTALLED);
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * The contract documented on {@link #installAtEnd} is all-or-nothing; when a deferred install fails
+     * mid-loop that contract can no longer be met, so leave an explicit inventory of which projects already
+     * reached the local repository and which were skipped, instead of failing silently into a mixed state.
+     */
+    private void logPartialInstallInventory(
+            List<Project> projectsUsingPlugin, List<Project> installedProjects, Project failedProject) {
+        getLog().error("Failed to install " + gav(failedProject)
+                + "; the local repository is in a partially installed state:");
+        for (Project reactorProject : projectsUsingPlugin) {
+            if (installedProjects.contains(reactorProject)) {
+                getLog().error("  installed: " + gav(reactorProject));
+            } else if (reactorProject == failedProject) {
+                getLog().error("  failed: " + gav(reactorProject));
+            } else if (getState(reactorProject) == State.TO_BE_INSTALLED) {
+                getLog().error("  not installed: " + gav(reactorProject));
+            }
+        }
+    }
+
+    private static String gav(Project project) {
+        return project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion();
     }
 
     private boolean allProjectsMarked(List<Project> projectsUsingPlugin) {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * 
  *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -17,4 +17,29 @@
  * under the License.
  */
 
-asfMavenTlpPlgnBuild(jdks:[ "17", "21" ], maven: [ "4.0.x" ], siteJdk:[ "17" ], siteMvn: "4.0.x" )
+import java.io.*;
+import java.util.*;
+
+String[] paths =
+[
+    "org/apache/maven/its/install/gpa1/test/maven-metadata-local.xml",
+    "org/apache/maven/its/install/gpa1/test/0.1/test-0.1.jar",
+    "org/apache/maven/its/install/gpa1/test/0.1/test-0.1.pom",
+];
+
+Set cksumToCheckPaths = new HashSet( Arrays.asList( [
+    "org/apache/maven/its/install/gpa1/test/0.1/test-0.1.jar",
+    "org/apache/maven/its/install/gpa1/test/0.1/test-0.1.pom",
+] as String[] ) );
+
+for ( String path : paths )
+{
+    File file = new File( localRepositoryPath, path );
+    System.out.println( "Checking for existence of " + file );
+    if ( !file.isFile() )
+    {
+        throw new FileNotFoundException( "Missing: " + file.getAbsolutePath() );
+    }
+}
+
+return true;
