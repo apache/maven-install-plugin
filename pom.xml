@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-plugins</artifactId>
-    <version>49</version>
+    <version>50</version>
     <relativePath />
   </parent>
 
@@ -77,6 +77,9 @@
     <slf4jVersion>2.0.19</slf4jVersion>
 
     <!-- plugin versions used in IT tests -->
+    <!-- version.maven-surefire was renamed to surefire.version in apache parent 40;
+         keep the old property name as an alias so IT poms using @version.maven-surefire@ keep working -->
+    <version.maven-surefire>${surefire.version}</version.maven-surefire>
     <guiceVersion>5.1.0</guiceVersion>
     <junitVersion>6.1.3</junitVersion>
     <mavenPluginTestingVersion>4.0.0-beta-4</mavenPluginTestingVersion>
@@ -199,6 +202,16 @@
   <build>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.rat</groupId>
+          <artifactId>apache-rat-plugin</artifactId>
+          <configuration>
+            <excludes>
+              <!-- Binary test resource (fake jar, plain text placeholder) without license header -->
+              <exclude>src/test/resources/unit/attached-artifact-test-1.0-SNAPSHOT.jar</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
