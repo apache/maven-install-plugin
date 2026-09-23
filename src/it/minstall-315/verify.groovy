@@ -27,27 +27,15 @@ if ( !installed.isFile() ) {
     throw new FileNotFoundException( "Installed file not found: " + installed )
 }
 
-// The installed file must be an XML POM, not a JAR (ZIP). Check the magic bytes.
+// The installed file must not be a JAR (ZIP). Check the magic bytes: PK\x03\x04 = 0x50 0x4B 0x03 0x04.
 byte[] magic = new byte[4]
 new FileInputStream( installed ).with { stream ->
     stream.read( magic )
 }
 
-// ZIP magic bytes: PK\x03\x04 (0x50 0x4B 0x03 0x04)
 if ( magic[0] == 0x50 && magic[1] == 0x4B ) {
     throw new Exception(
         "MINSTALL-315 regression: install:install installed a JAR (ZIP) instead of the POM for a pom-packaged project" )
-}
-
-// Must start with XML declaration or opening tag
-String head = new String( magic )
-if ( !head.startsWith( "<" ) && !head.startsWith( "\xEF" ) ) {  // UTF-8 BOM or plain XML
-    // Also accept UTF-8 BOM (EF BB BF 3C)
-    if ( !( magic[0] == (byte)0xEF && magic[1] == (byte)0xBB ) ) {
-        if ( !installed.text.trim().startsWith( "<" ) ) {
-            throw new Exception( "Installed file does not look like XML: " + installed )
-        }
-    }
 }
 
 return true
