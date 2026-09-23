@@ -200,6 +200,16 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>org.apache.rat</groupId>
+          <artifactId>apache-rat-plugin</artifactId>
+          <configuration>
+            <excludes>
+              <!-- Binary test resource (fake jar, plain text placeholder) without license header -->
+              <exclude>src/test/resources/unit/attached-artifact-test-1.0-SNAPSHOT.jar</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
           <configuration>
