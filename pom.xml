@@ -87,7 +87,7 @@
     <mavenPluginPluginVersion>${version.maven-plugin-tools}</mavenPluginPluginVersion>
     <mavenResourcesPluginVersion>${version.maven-resources-plugin}</mavenResourcesPluginVersion>
     <mavenSourcePluginVersion>${version.maven-source-plugin}</mavenSourcePluginVersion>
-    <mavenSurefirePluginVersion>${version.maven-surefire}</mavenSurefirePluginVersion>
+    <mavenSurefirePluginVersion>${version.maven-surefire-plugin}</mavenSurefirePluginVersion>
 
     <project.build.outputTimestamp>2026-09-11T21:44:13Z</project.build.outputTimestamp>
   </properties>
