@@ -156,6 +156,34 @@ class InstallMojoTest {
 
     @Test
     @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
+    @MojoParameter(name = "allowIncompleteProjects", value = "true")
+    void mainArtifactWithDirectoryPathIsSkippedWhenAttachmentsExist(InstallMojo mojo) throws Exception {
+        // Module source hierarchy: the JAR plugin attaches one JAR per Java module and never assigns a
+        // file to the main artifact, whose path stays the (directory) build output. Install must install
+        // the POM + attachments and must NOT hand the directory to the installer (which fails with
+        // "is a folder"). So the main artifact is dropped from the install request.
+        assertNotNull(mojo);
+        Project project = (Project) getVariableValueFromObject(mojo, "project");
+        projectManager.attachArtifact(
+                project,
+                new ProducedArtifactStub("org.apache.maven.test", "foo.bar", "", "1.0-SNAPSHOT", "jar"),
+                Paths.get(getBasedir(), "target/test-classes/unit/attached-artifact-test-1.0-SNAPSHOT.jar"));
+        artifactManager.setPath(project.getMainArtifact().get(), Paths.get(getBasedir(), "target/test-classes/unit"));
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        Collection<ProducedArtifact> artifacts = request.getArtifacts();
+        assertEquals(
+                Arrays.asList(
+                        "org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT",
+                        "org.apache.maven.test:foo.bar:jar:1.0-SNAPSHOT"),
+                artifacts.stream().map(Artifact::key).toList());
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
     void installIfArtifactFileIsNull(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         Project project = (Project) getVariableValueFromObject(mojo, "project");
