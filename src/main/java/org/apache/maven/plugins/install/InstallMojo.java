@@ -249,6 +249,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
         ProjectManager projectManager = getProjectManager();
         Collection<ProducedArtifact> installables = projectManager.getAllArtifacts(project);
         Collection<ProducedArtifact> attachedArtifacts = projectManager.getAttachedArtifacts(project);
+        List<ProducedArtifact> toInstall = new ArrayList<>(installables);
 
         getArtifactManager().setPath(project.getPomArtifact(), project.getPomPath());
 
@@ -260,13 +261,14 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
                                 "The packaging for this project did not assign a file to the build artifact");
                     } else {
                         if (allowIncompleteProjects) {
-                            getLog().warn("");
-                            getLog().warn("The packaging plugin for this project did not assign");
-                            getLog().warn(
-                                            "a main file to the project but it has attachments. Change packaging to 'pom'.");
-                            getLog().warn("");
-                            getLog().warn("Incomplete projects like this will fail in future Maven versions!");
-                            getLog().warn("");
+                            // The main artifact has no file: its path is e.g. the output directory of a module
+                            // source hierarchy, where the JAR plugin attaches one JAR per Java module instead of
+                            // assigning a single main JAR. Install the POM and the attachments only; do not hand
+                            // the directory to the installer, which would otherwise fail with "is a folder".
+                            getLog().info("The project's main artifact has no file"
+                                    + " (e.g. a module source hierarchy produces one artifact per Java module);"
+                                    + " installing the POM and the attached artifacts only.");
+                            toInstall.remove(installable);
                         } else {
                             throw new MojoException("The packaging plugin for this project did not assign "
                                     + "a main file to the project but it has attachments. Change packaging to 'pom'.");
@@ -279,7 +281,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
             }
         }
 
-        return ArtifactInstallerRequest.build(session, installables);
+        return ArtifactInstallerRequest.build(session, toInstall);
     }
 
     private boolean isValidPath(Artifact a) {
