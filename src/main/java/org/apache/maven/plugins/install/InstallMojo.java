@@ -29,6 +29,7 @@ import org.apache.maven.api.Artifact;
 import org.apache.maven.api.ProducedArtifact;
 import org.apache.maven.api.Project;
 import org.apache.maven.api.Session;
+import org.apache.maven.api.SourceRoot;
 import org.apache.maven.api.di.Inject;
 import org.apache.maven.api.model.Plugin;
 import org.apache.maven.api.plugin.Log;
@@ -249,6 +250,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
         ProjectManager projectManager = getProjectManager();
         Collection<ProducedArtifact> installables = projectManager.getAllArtifacts(project);
         Collection<ProducedArtifact> attachedArtifacts = projectManager.getAttachedArtifacts(project);
+        List<ProducedArtifact> toInstall = new ArrayList<>(installables);
 
         getArtifactManager().setPath(project.getPomArtifact(), project.getPomPath());
 
@@ -258,19 +260,19 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
                     if (attachedArtifacts.isEmpty()) {
                         throw new MojoException(
                                 "The packaging for this project did not assign a file to the build artifact");
+                    } else if (usesModuleSourceHierarchy(project, projectManager)) {
+                        getLog().info("Module source hierarchy: no main artifact produced;"
+                                + " installing POM and per-module artifacts only.");
+                        toInstall.remove(installable);
+                    } else if (allowIncompleteProjects) {
+                        getLog().warn("The packaging plugin for this project did not assign"
+                                + " a main file to the project but it has attachments."
+                                + " Change packaging to 'pom'."
+                                + " Incomplete projects like this will fail in future Maven versions!");
+                        toInstall.remove(installable);
                     } else {
-                        if (allowIncompleteProjects) {
-                            getLog().warn("");
-                            getLog().warn("The packaging plugin for this project did not assign");
-                            getLog().warn(
-                                            "a main file to the project but it has attachments. Change packaging to 'pom'.");
-                            getLog().warn("");
-                            getLog().warn("Incomplete projects like this will fail in future Maven versions!");
-                            getLog().warn("");
-                        } else {
-                            throw new MojoException("The packaging plugin for this project did not assign "
-                                    + "a main file to the project but it has attachments. Change packaging to 'pom'.");
-                        }
+                        throw new MojoException("The packaging plugin for this project did not assign "
+                                + "a main file to the project but it has attachments. Change packaging to 'pom'.");
                     }
                 } else {
                     throw new MojoException("The packaging for this project did not assign "
@@ -279,11 +281,17 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
             }
         }
 
-        return ArtifactInstallerRequest.build(session, installables);
+        return ArtifactInstallerRequest.build(session, toInstall);
     }
 
     private boolean isValidPath(Artifact a) {
         return getArtifactManager().getPath(a).filter(Files::isRegularFile).isPresent();
+    }
+
+    private static boolean usesModuleSourceHierarchy(Project project, ProjectManager projectManager) {
+        return projectManager.getSourceRoots(project).stream()
+                .filter(SourceRoot::enabled)
+                .anyMatch(sr -> sr.module().isPresent());
     }
 
     void setSkip(boolean skip) {
