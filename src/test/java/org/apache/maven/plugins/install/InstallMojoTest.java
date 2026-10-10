@@ -27,12 +27,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
 import org.apache.maven.api.ProducedArtifact;
 import org.apache.maven.api.Project;
+import org.apache.maven.api.SourceRoot;
 import org.apache.maven.api.di.Inject;
 import org.apache.maven.api.di.Named;
 import org.apache.maven.api.di.Priority;
@@ -151,6 +153,34 @@ class InstallMojoTest {
                         "org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT",
                         "org.apache.maven.test:maven-install-test:jar:1.0-SNAPSHOT",
                         "org.apache.maven.test:attached-artifact-test:jar:1.0-SNAPSHOT"),
+                artifacts.stream().map(Artifact::key).toList());
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
+    void moduleSourceHierarchySkipsMainArtifact(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        Project project = (Project) getVariableValueFromObject(mojo, "project");
+
+        SourceRoot moduleRoot = mock(SourceRoot.class);
+        when(moduleRoot.module()).thenReturn(Optional.of("org.example.module"));
+        when(projectManager.getSourceRoots(project)).thenReturn(List.of(moduleRoot));
+
+        projectManager.attachArtifact(
+                project,
+                new ProducedArtifactStub("org.apache.maven.test", "org.example.module", "", "1.0-SNAPSHOT", "jar"),
+                Paths.get(getBasedir(), "target/test-classes/unit/attached-artifact-test-1.0-SNAPSHOT.jar"));
+        artifactManager.setPath(project.getMainArtifact().get(), Paths.get(getBasedir(), "target/test-classes/unit"));
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        Collection<ProducedArtifact> artifacts = request.getArtifacts();
+        assertEquals(
+                Arrays.asList(
+                        "org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT",
+                        "org.apache.maven.test:org.example.module:jar:1.0-SNAPSHOT"),
                 artifacts.stream().map(Artifact::key).toList());
     }
 
