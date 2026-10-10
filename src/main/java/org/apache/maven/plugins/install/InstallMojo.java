@@ -264,12 +264,10 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
                                 + " installing POM and per-module artifacts only.");
                         toInstall.remove(installable);
                     } else if (allowIncompleteProjects) {
-                        getLog().warn("");
-                        getLog().warn("The packaging plugin for this project did not assign");
-                        getLog().warn("a main file to the project but it has attachments. Change packaging to 'pom'.");
-                        getLog().warn("");
-                        getLog().warn("Incomplete projects like this will fail in future Maven versions!");
-                        getLog().warn("");
+                        getLog().warn("The packaging plugin for this project did not assign"
+                                + " a main file to the project but it has attachments."
+                                + " Change packaging to 'pom'."
+                                + " Incomplete projects like this will fail in future Maven versions!");
                         toInstall.remove(installable);
                     } else {
                         throw new MojoException("The packaging plugin for this project did not assign "
