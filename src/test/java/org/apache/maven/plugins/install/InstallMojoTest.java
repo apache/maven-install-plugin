@@ -164,6 +164,7 @@ class InstallMojoTest {
         Project project = (Project) getVariableValueFromObject(mojo, "project");
 
         SourceRoot moduleRoot = mock(SourceRoot.class);
+        when(moduleRoot.enabled()).thenReturn(true);
         when(moduleRoot.module()).thenReturn(Optional.of("org.example.module"));
         when(projectManager.getSourceRoots(project)).thenReturn(List.of(moduleRoot));
 

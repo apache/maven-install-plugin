@@ -29,6 +29,7 @@ import org.apache.maven.api.Artifact;
 import org.apache.maven.api.ProducedArtifact;
 import org.apache.maven.api.Project;
 import org.apache.maven.api.Session;
+import org.apache.maven.api.SourceRoot;
 import org.apache.maven.api.di.Inject;
 import org.apache.maven.api.model.Plugin;
 import org.apache.maven.api.plugin.Log;
@@ -289,6 +290,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
 
     private static boolean usesModuleSourceHierarchy(Project project, ProjectManager projectManager) {
         return projectManager.getSourceRoots(project).stream()
+                .filter(SourceRoot::enabled)
                 .anyMatch(sr -> sr.module().isPresent());
     }
 
