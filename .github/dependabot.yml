@@ -16,12 +16,29 @@
 #
 version: 2
 updates:
-- package-ecosystem: maven
-  directory: "/"
-  schedule:
-    interval: daily
-    time: '04:00'
-  open-pull-requests-limit: 10
-  ignore:
-    # Ignore Maven Core updates
-    - dependency-name: "org.apache.maven:*"
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "maven-install-plugin-4.x"
+
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    ignore:
+      # Mockito 5 requires Java 11; the build still runs on JDK 8
+      - dependency-name: "org.mockito:*"
+        versions: [">= 5.0.0"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "maven-install-plugin-4.x"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+# trigger rescan: 2026-09-25b
