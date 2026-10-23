@@ -275,7 +275,8 @@ class InstallMojoTest {
 
         assertFalse(installedArtifact.exists());
 
-        assertFalse(localRepo.exists());
+        // the resolver may create an empty local repository directory
+        assertTrue(!localRepo.exists() || localRepo.list().length == 0);
     }
 
     private String dotToSlashReplacer(String parameter) {
