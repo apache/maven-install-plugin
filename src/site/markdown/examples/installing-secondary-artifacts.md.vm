@@ -30,7 +30,7 @@ Sometimes you need to install secondary artifacts after the main artifact has be
 
 Let us assume that you want to install the sources for an old artifact, like commons-logging-1.0.3. The [central repository](http://repo1.maven.org/maven2/commons-logging/commons-logging/1.0.3/) only has the main artifact and a `-javadoc` artifact for that version. Package up the sources into a JAR file on your local disk and then run the following command:
 
-```unknown
+```shell
 mvn ${project.groupId}:${project.artifactId}:${project.version}:install-file  -Dfile=path-to-commons-logging-sources.jar \
                                                                               -DgroupId=commons-logging \
                                                                               -DartifactId=commons-logging \ 

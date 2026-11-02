@@ -33,7 +33,7 @@ By default, the Apache Maven Install Plugin uses the local repository defined in
 
 You could install an artifact on a specific local repository by setting the `localRepositoryPath` parameter when installing.
 
-```unknown
+```shell
 mvn ${project.groupId}:${project.artifactId}:${project.version}:install-file  -Dfile=path-to-your-artifact-jar \
                                                                               -DgroupId=your.groupId \
                                                                               -DartifactId=your-artifactId \
