@@ -35,7 +35,7 @@ With the `maven-install-plugin` you can put your artifacts in the local reposito
 
 In most cases, `install:install` goal doesn't need any configuration, it needs the project's POM and the artifact file to be installed during the `install` phase of the default build lifecycle.
 
-```unknown
+```shell
 mvn install
 ```
 
@@ -43,7 +43,7 @@ mvn install
 
 The `install:install-file` goal is used primarily for installing artifacts to the local repository which were not built by Maven. The project's development team may or may not provide a POM for the artifact. Here's a list of some of the available parameters for the `install-file` goal:
 
-```unknown
+```shell
 mvn install:install-file -Dfile=your-artifact-1.0.jar \
                          [-DpomFile=your-pom.xml] \
                          [-Dsources=src.jar] \

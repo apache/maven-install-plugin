@@ -28,13 +28,13 @@ under the License.
 
 The Apache Maven Install Plugin can include a pre-built custom POM with the artifact in the local repository. Just set the value of the `pomFile` parameter to the path of the custom POM.
 
-```unknown
+```shell
 mvn ${project.groupId}:${project.artifactId}:${project.version}:install-file -Dfile=path-to-your-artifact-jar -DpomFile=path-to-pom
 ```
 
 If the JAR was built by Apache Maven, it'll contain a pom.xml in a subfolder of the META-INF directory, which will be read by default. In that case, all you need to do is:
 
-```unknown
+```shell
 mvn ${project.groupId}:${project.artifactId}:${project.version}:install-file -Dfile=<path-to-file>
 ```
 
