@@ -55,7 +55,7 @@ import org.apache.maven.api.services.xml.XmlReaderException;
 /**
  * Installs a file in the local repository.
  */
-@Mojo(name = "install-file", projectRequired = false, aggregator = true)
+@Mojo(name = "install-file", projectRequired = false)
 @SuppressWarnings("unused")
 public class InstallFileMojo implements org.apache.maven.api.plugin.Mojo {
     private static final String TAR = "tar.";
