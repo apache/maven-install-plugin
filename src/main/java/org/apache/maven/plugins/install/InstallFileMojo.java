@@ -50,7 +50,6 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -267,7 +266,9 @@ public class InstallFileMojo extends AbstractMojo {
             ArtifactType artifactType =
                     session.getRepositorySession().getArtifactTypeRegistry().get(packaging);
             if (artifactType != null) {
-                if (StringUtils.isEmpty(classifier) && !StringUtils.isEmpty(artifactType.getClassifier())) {
+                if ((classifier == null || classifier.isEmpty())
+                        && !(artifactType.getClassifier() == null
+                                || artifactType.getClassifier().isEmpty())) {
                     classifier = artifactType.getClassifier();
                 }
                 mainArtifactExtension = artifactType.getExtension();
