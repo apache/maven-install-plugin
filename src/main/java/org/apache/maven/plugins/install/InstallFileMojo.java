@@ -40,9 +40,9 @@ import org.apache.maven.api.Artifact;
 import org.apache.maven.api.ProducedArtifact;
 import org.apache.maven.api.Session;
 import org.apache.maven.api.di.Inject;
+import org.apache.maven.api.logging.Logger;
 import org.apache.maven.api.model.Model;
 import org.apache.maven.api.model.Parent;
-import org.apache.maven.api.plugin.Log;
 import org.apache.maven.api.plugin.MojoException;
 import org.apache.maven.api.plugin.annotations.Mojo;
 import org.apache.maven.api.plugin.annotations.Parameter;
@@ -65,7 +65,7 @@ public class InstallFileMojo implements org.apache.maven.api.plugin.Mojo {
     private static final Pattern ENCODING_PSEUDO_ATTR = Pattern.compile("encoding\\s*=\\s*[\"']([^\"']+)[\"']");
 
     @Inject
-    private Log log;
+    private Logger log;
 
     @Inject
     private Session session;

@@ -40,10 +40,10 @@ import org.apache.maven.api.di.Named;
 import org.apache.maven.api.di.Priority;
 import org.apache.maven.api.di.Provides;
 import org.apache.maven.api.di.Singleton;
+import org.apache.maven.api.logging.Logger;
 import org.apache.maven.api.model.Build;
 import org.apache.maven.api.model.Plugin;
 import org.apache.maven.api.model.PluginExecution;
-import org.apache.maven.api.plugin.Log;
 import org.apache.maven.api.plugin.Mojo;
 import org.apache.maven.api.plugin.MojoException;
 import org.apache.maven.api.plugin.testing.InjectMojo;
@@ -227,7 +227,7 @@ class InstallMojoTest {
     void midLoopFailureLogsPartialInstallInventory(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         setVariableValueToObject(mojo, "session", session);
-        Log log = mock(Log.class);
+        Logger log = mock(Logger.class);
         setVariableValueToObject(mojo, "log", log);
         mojo.setSkip(true);
 
@@ -252,7 +252,7 @@ class InstallMojoTest {
     void deferredInstallRunsExactlyOncePerProject(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         setVariableValueToObject(mojo, "session", session);
-        setVariableValueToObject(mojo, "log", mock(Log.class));
+        setVariableValueToObject(mojo, "log", mock(Logger.class));
         mojo.setSkip(true);
 
         Project moduleA = reactorProject("module-a");

@@ -31,8 +31,8 @@ import org.apache.maven.api.Project;
 import org.apache.maven.api.Session;
 import org.apache.maven.api.SourceRoot;
 import org.apache.maven.api.di.Inject;
+import org.apache.maven.api.logging.Logger;
 import org.apache.maven.api.model.Plugin;
-import org.apache.maven.api.plugin.Log;
 import org.apache.maven.api.plugin.MojoException;
 import org.apache.maven.api.plugin.annotations.Mojo;
 import org.apache.maven.api.plugin.annotations.Parameter;
@@ -49,7 +49,7 @@ import org.apache.maven.api.services.ProjectManager;
 @Mojo(name = "install", defaultPhase = "install")
 public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
     @Inject
-    private Log log;
+    private Logger log;
 
     @Inject
     private Session session;
@@ -298,7 +298,7 @@ public class InstallMojo implements org.apache.maven.api.plugin.Mojo {
         this.skip = skip;
     }
 
-    protected Log getLog() {
+    protected Logger getLog() {
         return log;
     }
 
