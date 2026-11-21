@@ -22,11 +22,16 @@ import javax.inject.Inject;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.maven.api.plugin.testing.InjectMojo;
 import org.apache.maven.api.plugin.testing.MojoParameter;
@@ -34,6 +39,7 @@ import org.apache.maven.api.plugin.testing.MojoTest;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Build;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -44,11 +50,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.lenient;
 
 /**
@@ -410,6 +419,171 @@ class InstallMojoTest {
 
         assertInstalled(localRepo, "org/apache/maven/its/install/rp/test/maven-metadata-local.xml");
         assertInstalled(localRepo, "org/apache/maven/its/install/rp/test/1.0/test-1.0.pom");
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    void pomPackagingInstallsPomWhenArtifactHoldsJar(InstallMojo mojo) throws Exception {
+        mojo.setPluginContext(new HashMap<>());
+        mavenProject.setGroupId("org.apache.maven.its.install.minstall315");
+        mavenProject.setArtifactId("test");
+        mavenProject.setVersion("1.0");
+        mavenProject.setPackaging("pom");
+        byte[] pom = "<project/>".getBytes(StandardCharsets.UTF_8);
+        mavenProject.setPomFile(
+                Files.write(tempDir.resolve("minstall315-pom.xml"), pom).toFile());
+        // jar:jar on a pom-packaged project assigns its JAR to the project artifact
+        Artifact artifact = pomArtifact(mavenProject);
+        artifact.setFile(Files.write(tempDir.resolve("test-1.0.jar"), new byte[] {0x50, 0x4B, 0x03, 0x04})
+                .toFile());
+        mavenProject.setArtifact(artifact);
+
+        mojo.execute();
+
+        String versionDir = "org/apache/maven/its/install/minstall315/test/1.0/";
+        assertInstalled(localRepo, versionDir + "test-1.0.pom");
+        assertArrayEquals(pom, Files.readAllBytes(new File(localRepo, versionDir + "test-1.0.pom").toPath()));
+        assertNotInstalled(localRepo, versionDir + "test-1.0.jar");
+    }
+
+    // -------------------------------------------------------------------------
+    // Reactor tests: the mojo runs once per project and shares state through the plugin contexts
+    // -------------------------------------------------------------------------
+
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "true")
+    void installAtEndDefersUntilLastProjectUsingPlugin(InstallMojo mojo) throws Exception {
+        String groupId = "org.apache.maven.its.install.dae.pass";
+        MavenProject root = withInstallPlugin(reactorProject(groupId, "dae"), null);
+        MavenProject module1 = withInstallPlugin(reactorProject(groupId, "module1"), null);
+        // The install execution is unbound, so the mojo never runs for this project
+        MavenProject module2 = withInstallPlugin(reactorProject(groupId, "module2"), "none");
+        MavenProject module3 = withInstallPlugin(reactorProject(groupId, "module3"), null);
+        // The packaging's lifecycle has no install plugin at all
+        MavenProject module4 = reactorProject(groupId, "module4");
+        Map<MavenProject, Map<String, Object>> reactor = reactor(root, module1, module2, module3, module4);
+
+        execute(mojo, root, reactor);
+        execute(mojo, module1, reactor);
+
+        assertFalse(localRepo.exists(), "Nothing may be installed before the last project");
+
+        execute(mojo, module3, reactor);
+
+        String groupDir = "org/apache/maven/its/install/dae/pass/";
+        assertInstalled(localRepo, groupDir + "dae/1.0/dae-1.0.pom");
+        assertInstalled(localRepo, groupDir + "module1/1.0/module1-1.0.pom");
+        assertInstalled(localRepo, groupDir + "module3/1.0/module3-1.0.pom");
+        assertNotInstalled(localRepo, groupDir + "module2/1.0/module2-1.0.pom");
+        assertNotInstalled(localRepo, groupDir + "module4/1.0/module4-1.0.pom");
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "true")
+    void installAtEndInstallsNothingWhenProjectNeverRuns(InstallMojo mojo) throws Exception {
+        String groupId = "org.apache.maven.its.install.dae.fail";
+        MavenProject root = withInstallPlugin(reactorProject(groupId, "dae"), null);
+        // The build of this project fails before the install phase
+        MavenProject module1 = withInstallPlugin(reactorProject(groupId, "module1"), null);
+        Map<MavenProject, Map<String, Object>> reactor = reactor(root, module1);
+
+        execute(mojo, root, reactor);
+
+        assertFalse(localRepo.exists(), "Nothing may be installed while a project is still outstanding");
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "true")
+    void installAtEndLeavesOutSkippedProject(InstallMojo mojo) throws Exception {
+        String groupId = "org.apache.maven.its.minstall-99";
+        MavenProject root = withInstallPlugin(reactorProject(groupId, "configperproject"), null);
+        MavenProject module1 = withInstallPlugin(reactorProject(groupId, "module1"), null);
+        MavenProject module2 = withInstallPlugin(reactorProject(groupId, "module2"), null);
+        Map<MavenProject, Map<String, Object>> reactor = reactor(root, module1, module2);
+
+        execute(mojo, root, reactor);
+        execute(mojo, module1, reactor);
+
+        assertFalse(localRepo.exists(), "Nothing may be installed before the last project");
+
+        setMojoField(mojo, "skip", true);
+        execute(mojo, module2, reactor);
+
+        String groupDir = "org/apache/maven/its/minstall-99/";
+        assertInstalled(localRepo, groupDir + "configperproject/1.0/configperproject-1.0.pom");
+        assertInstalled(localRepo, groupDir + "module1/1.0/module1-1.0.pom");
+        assertNotInstalled(localRepo, groupDir + "module2/1.0/module2-1.0.pom");
+    }
+
+    private MavenProject reactorProject(String groupId, String artifactId) throws IOException {
+        MavenProject project = new MavenProject();
+        project.setGroupId(groupId);
+        project.setArtifactId(artifactId);
+        project.setVersion("1.0");
+        project.setPackaging("pom");
+        project.setBuild(new Build());
+        project.setArtifact(pomArtifact(project));
+        Path basedir = Files.createDirectories(tempDir.resolve(artifactId));
+        project.setPomFile(Files.write(basedir.resolve("pom.xml"), "<project/>".getBytes(StandardCharsets.UTF_8))
+                .toFile());
+        return project;
+    }
+
+    private MavenProject withInstallPlugin(MavenProject project, String phase) {
+        Plugin plugin = new Plugin();
+        plugin.setArtifactId("maven-install-plugin");
+        PluginExecution execution = new PluginExecution();
+        execution.setId("default-install");
+        execution.setPhase(phase);
+        execution.setGoals(Collections.singletonList("install"));
+        plugin.setExecutions(Collections.singletonList(execution));
+        project.getBuild().addPlugin(plugin);
+        return project;
+    }
+
+    /**
+     * Makes the session report the given projects, each with a plugin context of its own, as Maven does.
+     */
+    private Map<MavenProject, Map<String, Object>> reactor(MavenProject... projects) {
+        Map<MavenProject, Map<String, Object>> contexts = new LinkedHashMap<>();
+        for (MavenProject project : projects) {
+            Map<String, Object> context = new HashMap<>();
+            contexts.put(project, context);
+            lenient().when(mavenSession.getPluginContext(any(), same(project))).thenReturn(context);
+        }
+        lenient().when(mavenSession.getProjects()).thenReturn(new ArrayList<>(contexts.keySet()));
+        return contexts;
+    }
+
+    /**
+     * Runs the mojo the way Maven does for one project of the reactor: the same goal configuration, with
+     * that project and its plugin context.
+     */
+    private void execute(InstallMojo mojo, MavenProject project, Map<MavenProject, Map<String, Object>> reactor)
+            throws Exception {
+        setMojoField(mojo, "project", project);
+        mojo.setPluginContext(reactor.get(project));
+        mojo.execute();
+    }
+
+    private static void setMojoField(InstallMojo mojo, String fieldName, Object value) throws Exception {
+        Field field = InstallMojo.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(mojo, value);
+    }
+
+    private static Artifact pomArtifact(MavenProject project) {
+        return new org.apache.maven.artifact.DefaultArtifact(
+                project.getGroupId(),
+                project.getArtifactId(),
+                project.getVersion(),
+                null,
+                "pom",
+                null,
+                new DefaultArtifactHandler("pom"));
     }
 
     private void assertNoMainArtifactWithAttachments(InstallMojo mojo, boolean classesDirPresent) throws Exception {
