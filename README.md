@@ -65,6 +65,16 @@ There are some guidelines which will make applying PRs easier for us:
 
 If you plan to contribute on a regular basis, please consider filing a [contributor license agreement][cla].
 
+## Tests
+
+Unit tests are JUnit 5 (Jupiter) and live in `src/test/java`. New test code must not add JUnit 4, the vintage engine, Hamcrest, or `org.codehaus.plexus.util`; use JDK/Groovy APIs instead. Name tests after the behaviour they check, not after JIRA keys.
+
+Integration tests in `src/it` are reserved for behaviour that needs a real Maven build: reactor and deferred installation, `-T2` parallel builds, `-f` alternate POMs, embedded-POM execution and the `setup-*` support projects. Everything a mojo unit test can assert with a mocked session/repository belongs in `src/test`. Keep `verify.groovy` scripts in plain `assert` form.
+
+The Maven 4 branch (`maven-install-plugin-4.x`) uses the Maven 4 `@MojoTest` harness. Its `ArtifactInstaller` is mocked, so `maven-metadata-local.xml` is not written during unit tests; assert the coordinate-derived paths from the install request instead of a physical file. The 3.x line's harness writes real files. Both branches keep the same IT names and test-case names, but do not share API-specific test code: 4.x stays Maven 4 only.
+
+Run `mvn -Prun-its verify` for the full build, or `mvn -o -B test spotless:check` for the unit suite and formatting.
+
 Additional Resources
 --------------------
 
