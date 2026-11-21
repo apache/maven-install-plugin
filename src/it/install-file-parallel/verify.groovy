@@ -17,7 +17,7 @@
  * under the License.
  */
 
-// MINSTALL-205: install:install-file must not trigger an "aggregator mojo" warning
+// install:install-file must not trigger an "aggregator mojo" warning
 // when two modules invoke it concurrently in a parallel (-T 2) build.
 
 import java.io.*;
@@ -33,19 +33,12 @@ String[] paths = [
 for ( String path : paths ) {
     File file = new File( localRepositoryPath, path );
     System.out.println( "Checking for existence of " + file );
-    if ( !file.isFile() ) {
-        throw new FileNotFoundException( "Missing: " + file.getAbsolutePath() );
-    }
+    assert file.isFile() : "Missing: " + file.getAbsolutePath();
 }
 
 // 2. The build log must NOT contain the "aggregator mojo already being executed" warning
 File buildLog = new File( basedir, "build.log" );
 String log = buildLog.text;
 
-if ( log.contains( "aggregator mojo is already being executed" ) ) {
-    throw new AssertionError(
-        "Build log contains the 'aggregator mojo is already being executed' warning, " +
-        "but install-file should no longer be an aggregator (MINSTALL-205)." );
-}
-
-return true;
+assert !log.contains( "aggregator mojo is already being executed" ) :
+    "install-file should no longer be an aggregator, but the build log contains the warning"
