@@ -19,14 +19,11 @@
 package org.apache.maven.plugins.install;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
@@ -124,21 +121,7 @@ class InstallMojoPomPackagingTest {
                 request.getArtifacts().stream().map(Artifact::key).toList());
         assertTrue(request.getArtifacts().stream()
                 .noneMatch(a -> "md5".equals(a.getExtension()) || "sha1".equals(a.getExtension())));
-        assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
-    }
-
-    private static void assertNoChecksumFiles(Path repositoryRoot) throws Exception {
-        if (!Files.exists(repositoryRoot)) {
-            return;
-        }
-        try (Stream<Path> paths = Files.walk(repositoryRoot)) {
-            assertTrue(
-                    paths.noneMatch(p -> {
-                        String name = p.getFileName().toString();
-                        return name.endsWith(".md5") || name.endsWith(".sha1");
-                    }),
-                    "no .md5/.sha1 checksum files should be created");
-        }
+        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
     @Provides

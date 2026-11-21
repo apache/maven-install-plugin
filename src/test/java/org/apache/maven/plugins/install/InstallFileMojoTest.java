@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
-import java.util.stream.Stream;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.LocalRepository;
@@ -52,6 +51,7 @@ import org.apache.maven.api.services.ArtifactInstaller;
 import org.apache.maven.api.services.ArtifactInstallerRequest;
 import org.apache.maven.api.services.ArtifactManager;
 import org.apache.maven.api.services.xml.ModelXmlFactory;
+import org.apache.maven.api.services.xml.XmlReaderException;
 import org.apache.maven.testing.plugin.stubs.ArtifactStub;
 import org.codehaus.plexus.util.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -696,7 +696,7 @@ class InstallFileMojoTest {
         assertEquals(groupId, model.get().getGroupId());
         assertEquals(artifactId, model.get().getArtifactId());
         assertEquals(version, model.get().getVersion());
-        assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
+        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
     /** Converted from {@code src/it/generate-pom-auto-2}: a POM already in the repo is never overwritten. */
@@ -725,7 +725,7 @@ class InstallFileMojoTest {
         assertEquals(Collections.singleton(jar), new HashSet<>(request.getArtifacts()));
         assertFileExists(artifactManager.getPath(jar).orElse(null));
         assertEquals("test", Files.readString(existingPom), "existing POM must keep its original 4-byte content");
-        assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
+        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
     /** Converted from {@code src/it/local-repo-override-with-checksum}: install into a custom local repository. */
@@ -754,7 +754,7 @@ class InstallFileMojoTest {
         assertEquals(
                 Paths.get(getBasedir(), OVERRIDE_REPO).toString().replace(File.separator, "/"),
                 request.getSession().getLocalRepository().getPath().toString().replace(File.separator, "/"));
-        assertNoChecksumFiles(Paths.get(getBasedir(), OVERRIDE_REPO));
+        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), OVERRIDE_REPO));
     }
 
     /**
@@ -791,7 +791,7 @@ class InstallFileMojoTest {
         assertEquals(groupId, model.get().getGroupId());
         assertEquals(artifactId, model.get().getArtifactId());
         assertEquals(version, model.get().getVersion());
-        assertNoChecksumFiles(Paths.get(getBasedir(), OVERRIDE_REPO));
+        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), OVERRIDE_REPO));
     }
 
     private void assertFileExistsInRequest(ArtifactInstallerRequest request, Artifact artifact) {
@@ -805,7 +805,7 @@ class InstallFileMojoTest {
             Path pomPath = requestArtifactManager.getPath(pom).orElse(null);
             assertNotNull(pomPath);
             return session.getService(ModelXmlFactory.class).read(pomPath);
-        } catch (Exception e) {
+        } catch (XmlReaderException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -821,20 +821,6 @@ class InstallFileMojoTest {
         MojoException e = assertThrows(MojoException.class, mojo::execute);
         assertNull(request.get(), "nothing should be installed on validation failure");
         return e;
-    }
-
-    private static void assertNoChecksumFiles(Path repositoryRoot) throws Exception {
-        if (!Files.exists(repositoryRoot)) {
-            return;
-        }
-        try (Stream<Path> paths = Files.walk(repositoryRoot)) {
-            assertTrue(
-                    paths.noneMatch(p -> {
-                        String name = p.getFileName().toString();
-                        return name.endsWith(".md5") || name.endsWith(".sha1");
-                    }),
-                    "no .md5/.sha1 checksum files should be created");
-        }
     }
 
     private static Path createJarWithEntries(String pomContent, String... entryNames) throws Exception {

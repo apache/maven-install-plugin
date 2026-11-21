@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
@@ -344,7 +343,7 @@ class InstallMojoTest {
                 request.getArtifacts().stream().map(Artifact::key).toList());
         assertTrue(request.getArtifacts().stream()
                 .noneMatch(a -> "md5".equals(a.getExtension()) || "sha1".equals(a.getExtension())));
-        assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
+        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
     private void attachClassifiedJar(Project project, String classifier) {
@@ -353,20 +352,6 @@ class InstallMojoTest {
                 new ProducedArtifactStub(
                         "org.apache.maven.test", "attached-artifact-test", classifier, "1.0-SNAPSHOT", "jar"),
                 Paths.get(getBasedir()).resolve(ATTACHED_ARTIFACT_JAR));
-    }
-
-    private static void assertNoChecksumFiles(Path repositoryRoot) throws Exception {
-        if (!Files.exists(repositoryRoot)) {
-            return;
-        }
-        try (Stream<Path> paths = Files.walk(repositoryRoot)) {
-            assertTrue(
-                    paths.noneMatch(p -> {
-                        String name = p.getFileName().toString();
-                        return name.endsWith(".md5") || name.endsWith(".sha1");
-                    }),
-                    "no .md5/.sha1 checksum files should be created");
-        }
     }
 
     private Project reactorProject(String artifactId) {
