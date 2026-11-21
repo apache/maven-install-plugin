@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -461,6 +462,143 @@ public class InstallFileMojoTest {
 
         MojoExecutionException e = assertThrows(MojoExecutionException.class, mojo::execute);
         assertTrue(e.getMessage().contains("not valid"), e.getMessage());
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests converted from src/it (see the IT-to-unit mapping in the report)
+    // -------------------------------------------------------------------------
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
+    void installFileWithInvalidGav(InstallFileMojo mojo) throws Exception {
+        setMojoField(mojo, "groupId", "invalid~group");
+        setMojoField(mojo, "artifactId", "invalid/artifactId");
+        setMojoField(mojo, "version", "1+");
+
+        MojoExecutionException e = assertThrows(MojoExecutionException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("The artifact information is not valid"), e.getMessage());
+        assertFalse(localRepo.exists(), "Nothing should be installed into " + localRepo);
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
+    void installFileWithMissingGav(InstallFileMojo mojo) throws Exception {
+        setMojoField(mojo, "groupId", "groupId");
+        setMojoField(mojo, "artifactId", null);
+        setMojoField(mojo, "version", null);
+        setMojoField(mojo, "packaging", null);
+        // A jar without an embedded POM, like the test.jar of the gav-validation IT.
+        setMojoField(mojo, "file", createJarWithEntries("test", "test.txt").toFile());
+
+        MojoExecutionException e = assertThrows(MojoExecutionException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("The artifact information is incomplete"), e.getMessage());
+        assertFalse(localRepo.exists(), "Nothing should be installed into " + localRepo);
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
+    void installFileGeneratesPomAutomatically(InstallFileMojo mojo) throws Exception {
+        mojo.execute();
+
+        assertInstalled(
+                localRepo,
+                "org/apache/maven/test/maven-install-file-test/1.0-SNAPSHOT/"
+                        + "maven-install-file-test-1.0-SNAPSHOT.jar");
+        assertInstalled(
+                localRepo,
+                "org/apache/maven/test/maven-install-file-test/1.0-SNAPSHOT/"
+                        + "maven-install-file-test-1.0-SNAPSHOT.pom");
+        assertInstalled(localRepo, "org/apache/maven/test/maven-install-file-test/maven-metadata-local.xml");
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
+    void installFileDoesNotOverwriteExistingPom(InstallFileMojo mojo) throws Exception {
+        File pom = new File(
+                localRepo,
+                "org/apache/maven/test/maven-install-file-test/1.0-SNAPSHOT/maven-install-file-test-1.0-SNAPSHOT.pom");
+        assertTrue(pom.getParentFile().isDirectory() || pom.getParentFile().mkdirs());
+        Files.write(pom.toPath(), "test".getBytes(StandardCharsets.UTF_8));
+
+        mojo.execute();
+
+        assertInstalled(
+                localRepo,
+                "org/apache/maven/test/maven-install-file-test/1.0-SNAPSHOT/"
+                        + "maven-install-file-test-1.0-SNAPSHOT.jar");
+        assertInstalled(
+                localRepo,
+                "org/apache/maven/test/maven-install-file-test/1.0-SNAPSHOT/"
+                        + "maven-install-file-test-1.0-SNAPSHOT.pom");
+        assertEquals(
+                "test",
+                new String(Files.readAllBytes(pom.toPath()), StandardCharsets.UTF_8),
+                "The existing POM must not be overwritten");
+        assertInstalled(localRepo, "org/apache/maven/test/maven-install-file-test/maven-metadata-local.xml");
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "gid")
+    @MojoParameter(name = "artifactId", value = "test")
+    @MojoParameter(name = "version", value = "0.1")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
+    void installFileToLocalRepositoryOverrideDoesNotCreateChecksums(InstallFileMojo mojo) throws Exception {
+        File overrideRepo =
+                tempDir.resolve("target/local-repo").toAbsolutePath().toFile();
+        setMojoField(mojo, "localRepositoryPath", overrideRepo);
+
+        mojo.execute();
+
+        String jarPath = "gid/test/0.1/test-0.1.jar";
+        assertInstalled(overrideRepo, jarPath);
+        assertNoChecksum(overrideRepo, jarPath);
+        assertFalse(new File(localRepo, jarPath).exists(), "The artifact should only be installed in " + overrideRepo);
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "gid")
+    @MojoParameter(name = "artifactId", value = "test")
+    @MojoParameter(name = "version", value = "0.1")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "generatePom", value = "true")
+    @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
+    void installFileToLocalRepositoryOverrideWithGeneratedPomDoesNotCreateChecksums(InstallFileMojo mojo)
+            throws Exception {
+        File overrideRepo =
+                tempDir.resolve("target/local-repo").toAbsolutePath().toFile();
+        setMojoField(mojo, "localRepositoryPath", overrideRepo);
+
+        mojo.execute();
+
+        String jarPath = "gid/test/0.1/test-0.1.jar";
+        String pomPath = "gid/test/0.1/test-0.1.pom";
+        assertInstalled(overrideRepo, jarPath);
+        assertInstalled(overrideRepo, pomPath);
+        assertNoChecksum(overrideRepo, jarPath);
+        assertNoChecksum(overrideRepo, pomPath);
+        assertFalse(new File(localRepo, jarPath).exists(), "The artifact should only be installed in " + overrideRepo);
+    }
+
+    private void assertInstalled(File repo, String path) {
+        File installed = new File(repo, path);
+        assertTrue(installed.isFile(), "Missing installed file: " + installed);
+    }
+
+    private void assertNoChecksum(File repo, String path) {
+        File md5 = new File(repo, path + ".md5");
+        File sha1 = new File(repo, path + ".sha1");
+        assertFalse(md5.exists(), "Unexpected checksum: " + md5);
+        assertFalse(sha1.exists(), "Unexpected checksum: " + sha1);
     }
 
     // -------------------------------------------------------------------------

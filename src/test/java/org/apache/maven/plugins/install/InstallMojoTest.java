@@ -46,6 +46,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.lenient;
@@ -260,6 +261,9 @@ class InstallMojoTest {
     @MojoParameter(name = "skip", value = "true")
     void testSkip(InstallMojo mojo) throws Exception {
         mojo.setPluginContext(new HashMap<>());
+        mavenProject.setGroupId("org.apache.maven.its.install.skip");
+        mavenProject.setArtifactId("test");
+        mavenProject.setVersion("1.0");
         setProjectArtifact(mavenProject);
 
         mojo.execute();
@@ -267,15 +271,140 @@ class InstallMojoTest {
         Artifact artifact = mavenProject.getArtifact();
         String groupId = dotToSlashReplacer(artifact.getGroupId());
 
-        String packaging = mavenProject.getPackaging();
-
-        File installedArtifact =
-                new File(localRepo + groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
-                        + artifact.getArtifactId() + "-" + artifact.getVersion() + "." + packaging);
+        File installedArtifact = new File(
+                localRepo,
+                groupId + "/" + artifact.getArtifactId() + "/" + artifact.getVersion() + "/"
+                        + artifact.getArtifactId() + "-" + artifact.getVersion() + "."
+                        + artifact.getArtifactHandler().getExtension());
 
         assertFalse(installedArtifact.exists());
 
+        // Assertions from the skip-install IT
+        assertNotInstalled(localRepo, "org/apache/maven/its/install/skip/test/maven-metadata-local.xml");
+        assertNotInstalled(localRepo, "org/apache/maven/its/install/skip/test/1.0/test-1.0.pom");
+        assertNotInstalled(localRepo, "org/apache/maven/its/install/skip/test/1.0/test-1.0.jar");
+
         assertFalse(localRepo.exists());
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests converted from src/it (see the IT-to-unit mapping in the report)
+    // -------------------------------------------------------------------------
+
+    @Test
+    @InjectMojo(goal = "install")
+    void installWithNoMainArtifactAndAttachmentsWithoutClassesDir(InstallMojo mojo) throws Exception {
+        assertNoMainArtifactWithAttachments(mojo, false);
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    void installWithNoMainArtifactAndAttachmentsWithClassesDir(InstallMojo mojo) throws Exception {
+        assertNoMainArtifactWithAttachments(mojo, true);
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    void installWithAttachedArtifactDoesNotCreateChecksums(InstallMojo mojo) throws Exception {
+        mojo.setPluginContext(new HashMap<>());
+        mavenProject.setGroupId("org.apache.maven.its.install.ajc");
+        mavenProject.setArtifactId("test");
+        mavenProject.setVersion("1.0-SNAPSHOT");
+        setProjectArtifact(mavenProject);
+        mavenProjectHelper.attachArtifact(
+                mavenProject,
+                "jar",
+                "sources",
+                Files.createTempFile(tempDir, "test-1.0-SNAPSHOT-sources", "jar")
+                        .toFile());
+
+        mojo.execute();
+
+        String versionDir = "org/apache/maven/its/install/ajc/test/1.0-SNAPSHOT/";
+        String[] installed = {
+            versionDir + "test-1.0-SNAPSHOT.pom",
+            versionDir + "test-1.0-SNAPSHOT.jar",
+            versionDir + "test-1.0-SNAPSHOT-sources.jar",
+            versionDir + "maven-metadata-local.xml",
+            "org/apache/maven/its/install/ajc/test/maven-metadata-local.xml"
+        };
+        for (String path : installed) {
+            assertInstalled(localRepo, path);
+            assertNoChecksum(localRepo, path);
+        }
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    void installPomDoesNotCreateChecksums(InstallMojo mojo) throws Exception {
+        mojo.setPluginContext(new HashMap<>());
+        mavenProject.setGroupId("org.apache.maven.its.install.pc");
+        mavenProject.setArtifactId("test");
+        mavenProject.setVersion("1.0-SNAPSHOT");
+        mavenProject.setPackaging("pom");
+        mavenProject.setPomFile(Files.createTempFile(tempDir, "test", "pom").toFile());
+
+        mojo.execute();
+
+        String versionDir = "org/apache/maven/its/install/pc/test/1.0-SNAPSHOT/";
+        String[] installed = {
+            versionDir + "test-1.0-SNAPSHOT.pom",
+            versionDir + "maven-metadata-local.xml",
+            "org/apache/maven/its/install/pc/test/maven-metadata-local.xml"
+        };
+        for (String path : installed) {
+            assertInstalled(localRepo, path);
+        }
+        assertNoChecksum(localRepo, versionDir + "test-1.0-SNAPSHOT.pom");
+    }
+
+    private void assertNoMainArtifactWithAttachments(InstallMojo mojo, boolean classesDirPresent) throws Exception {
+        mojo.setPluginContext(new HashMap<>());
+        mavenProject.setGroupId(
+                classesDirPresent ? "org.apache.maven.its.install.nma2" : "org.apache.maven.its.install.nma1");
+        mavenProject.setArtifactId("test");
+        mavenProject.setVersion("1.0-SNAPSHOT");
+        setProjectArtifact(mavenProject);
+        mavenProjectHelper.attachArtifact(
+                mavenProject,
+                "jar",
+                "it",
+                Files.createTempFile(tempDir, "test", "jar").toFile());
+
+        // The two IT variants differ only by the presence of target/classes. Mirror that under the temp
+        // directory so the real build output is untouched.
+        Path classesDir = tempDir.resolve("target/classes");
+        if (classesDirPresent) {
+            Files.createDirectories(classesDir);
+            assertTrue(Files.isDirectory(classesDir));
+        } else {
+            assertFalse(Files.exists(classesDir));
+        }
+
+        mavenProject.getArtifact().setFile(null);
+
+        MojoExecutionException e = assertThrows(MojoExecutionException.class, mojo::execute);
+        assertEquals(
+                "The packaging plugin for project test did not assign a main file to the project but it has "
+                        + "attachments. Change packaging to 'pom'.",
+                e.getMessage());
+    }
+
+    private void assertInstalled(File repo, String path) {
+        File installed = new File(repo, path);
+        assertTrue(installed.isFile(), "Missing installed file: " + installed);
+    }
+
+    private void assertNotInstalled(File repo, String path) {
+        File installed = new File(repo, path);
+        assertFalse(installed.isFile(), "File should not be installed: " + installed);
+    }
+
+    private void assertNoChecksum(File repo, String path) {
+        File md5 = new File(repo, path + ".md5");
+        File sha1 = new File(repo, path + ".sha1");
+        assertFalse(md5.exists(), "Unexpected checksum: " + md5);
+        assertFalse(sha1.exists(), "Unexpected checksum: " + sha1);
     }
 
     private String dotToSlashReplacer(String parameter) {
