@@ -202,11 +202,11 @@ public class InstallMojo extends AbstractMojo {
         // incomplete project: is not pom project and projectArtifact has no file
 
         // we must compare coordinates ONLY (as projectArtifact may not have file, and Artifact.equals factors it in)
-        // BUT if projectArtifact has file set, use that one
+        // For pom-packaged projects, pomArtifact and projectArtifact have the same coordinates: they represent the
+        // same artifact. In that case, another plugin (e.g. jar:jar) may have set a non-POM file on
+        // project.getArtifact() (MINSTALL-315). We must NOT use that file: pomArtifact already wraps
+        // project.getFile() (the actual POM) via ProjectArtifact, which is the correct artifact to install.
         if (ArtifactIdUtils.equalsId(pomArtifact, projectArtifact)) {
-            if (isFile(projectArtifact.getFile())) {
-                pomArtifact = projectArtifact;
-            }
             projectArtifact = null;
         }
 
