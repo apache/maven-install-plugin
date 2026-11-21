@@ -18,12 +18,11 @@
  */
 
 import java.io.*;
-import org.codehaus.plexus.util.*;
 
 // Clean up artifacts installed by previous runs
 File group = new File( localRepositoryPath, "org/apache/maven/its/install/minstall205" );
 if ( group.exists() ) {
-    FileUtils.deleteDirectory( group )
+    group.deleteDir()
 }
 
 return true;
