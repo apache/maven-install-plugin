@@ -28,7 +28,7 @@ under the License.
 
 Sometimes you need to install secondary artifacts after the main artifact has been installed in your local repository. To install a secondary artifact you need to use the `classifier` parameter to classify the secondary artifact.
 
-Let us assume that you want to install the sources for an old artifact, like commons-logging-1.0.3. The [central repository](http://repo1.maven.org/maven2/commons-logging/commons-logging/1.0.3/) only has the main artifact and a `-javadoc` artifact for that version. Package up the sources into a JAR file on your local disk and then run the following command:
+Let us assume that you want to install the sources for an old artifact, like commons-logging-1.0.3. The [central repository](https://repo.maven.apache.org/maven2/commons-logging/commons-logging/1.0.3/) only has the main artifact and a `-javadoc` artifact for that version. Package up the sources into a JAR file on your local disk and then run the following command:
 
 ```shell
 mvn ${project.groupId}:${project.artifactId}:${project.version}:install-file  -Dfile=path-to-commons-logging-sources.jar \
