@@ -472,7 +472,7 @@ public class InstallFileMojoTest {
     @InjectMojo(goal = "install-file")
     @MojoParameter(name = "packaging", value = "jar")
     @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
-    void installFileWithInvalidGav(InstallFileMojo mojo) throws Exception {
+    void invalidGavRejectedAndNothingInstalled(InstallFileMojo mojo) throws Exception {
         setMojoField(mojo, "groupId", "invalid~group");
         setMojoField(mojo, "artifactId", "invalid/artifactId");
         setMojoField(mojo, "version", "1+");
@@ -485,7 +485,7 @@ public class InstallFileMojoTest {
     @Test
     @InjectMojo(goal = "install-file")
     @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
-    void installFileWithMissingGav(InstallFileMojo mojo) throws Exception {
+    void missingCoordinatesRejectedAndNothingInstalled(InstallFileMojo mojo) throws Exception {
         setMojoField(mojo, "groupId", "groupId");
         setMojoField(mojo, "artifactId", null);
         setMojoField(mojo, "version", null);
@@ -502,7 +502,7 @@ public class InstallFileMojoTest {
     @InjectMojo(goal = "install-file")
     @MojoParameter(name = "packaging", value = "jar")
     @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
-    void installFileGeneratesPomAutomatically(InstallFileMojo mojo) throws Exception {
+    void generatePomAutoInstallsJarAndPom(InstallFileMojo mojo) throws Exception {
         mojo.execute();
 
         assertInstalled(
@@ -520,7 +520,7 @@ public class InstallFileMojoTest {
     @InjectMojo(goal = "install-file")
     @MojoParameter(name = "packaging", value = "jar")
     @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
-    void installFileDoesNotOverwriteExistingPom(InstallFileMojo mojo) throws Exception {
+    void existingPomNotOverwrittenWhenGeneratePomAuto(InstallFileMojo mojo) throws Exception {
         File pom = new File(
                 localRepo,
                 "org/apache/maven/test/maven-install-file-test/1.0-SNAPSHOT/maven-install-file-test-1.0-SNAPSHOT.pom");
@@ -551,7 +551,7 @@ public class InstallFileMojoTest {
     @MojoParameter(name = "version", value = "0.1")
     @MojoParameter(name = "packaging", value = "jar")
     @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
-    void installFileToLocalRepositoryOverrideDoesNotCreateChecksums(InstallFileMojo mojo) throws Exception {
+    void installFileIntoOverriddenLocalRepositoryNoChecksums(InstallFileMojo mojo) throws Exception {
         File overrideRepo =
                 tempDir.resolve("target/local-repo").toAbsolutePath().toFile();
         setMojoField(mojo, "localRepositoryPath", overrideRepo);
@@ -560,7 +560,7 @@ public class InstallFileMojoTest {
 
         String jarPath = "gid/test/0.1/test-0.1.jar";
         assertInstalled(overrideRepo, jarPath);
-        assertNoChecksum(overrideRepo, jarPath);
+        InstallTestHelper.assertNoChecksum(overrideRepo, jarPath);
         assertFalse(new File(localRepo, jarPath).exists(), "The artifact should only be installed in " + overrideRepo);
     }
 
@@ -572,8 +572,7 @@ public class InstallFileMojoTest {
     @MojoParameter(name = "packaging", value = "jar")
     @MojoParameter(name = "generatePom", value = "true")
     @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
-    void installFileToLocalRepositoryOverrideWithGeneratedPomDoesNotCreateChecksums(InstallFileMojo mojo)
-            throws Exception {
+    void installFileIntoOverriddenLocalRepositoryWithGeneratedPomNoChecksums(InstallFileMojo mojo) throws Exception {
         File overrideRepo =
                 tempDir.resolve("target/local-repo").toAbsolutePath().toFile();
         setMojoField(mojo, "localRepositoryPath", overrideRepo);
@@ -584,21 +583,14 @@ public class InstallFileMojoTest {
         String pomPath = "gid/test/0.1/test-0.1.pom";
         assertInstalled(overrideRepo, jarPath);
         assertInstalled(overrideRepo, pomPath);
-        assertNoChecksum(overrideRepo, jarPath);
-        assertNoChecksum(overrideRepo, pomPath);
+        InstallTestHelper.assertNoChecksum(overrideRepo, jarPath);
+        InstallTestHelper.assertNoChecksum(overrideRepo, pomPath);
         assertFalse(new File(localRepo, jarPath).exists(), "The artifact should only be installed in " + overrideRepo);
     }
 
     private void assertInstalled(File repo, String path) {
         File installed = new File(repo, path);
         assertTrue(installed.isFile(), "Missing installed file: " + installed);
-    }
-
-    private void assertNoChecksum(File repo, String path) {
-        File md5 = new File(repo, path + ".md5");
-        File sha1 = new File(repo, path + ".sha1");
-        assertFalse(md5.exists(), "Unexpected checksum: " + md5);
-        assertFalse(sha1.exists(), "Unexpected checksum: " + sha1);
     }
 
     // -------------------------------------------------------------------------

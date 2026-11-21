@@ -259,7 +259,7 @@ class InstallMojoTest {
     @Test
     @InjectMojo(goal = "install")
     @MojoParameter(name = "skip", value = "true")
-    void testSkip(InstallMojo mojo) throws Exception {
+    void skip(InstallMojo mojo) throws Exception {
         mojo.setPluginContext(new HashMap<>());
         mavenProject.setGroupId("org.apache.maven.its.install.skip");
         mavenProject.setArtifactId("test");
@@ -293,19 +293,19 @@ class InstallMojoTest {
 
     @Test
     @InjectMojo(goal = "install")
-    void installWithNoMainArtifactAndAttachmentsWithoutClassesDir(InstallMojo mojo) throws Exception {
+    void noMainArtifactWithAttachmentsFailsWhenOutputDirMissing(InstallMojo mojo) throws Exception {
         assertNoMainArtifactWithAttachments(mojo, false);
     }
 
     @Test
     @InjectMojo(goal = "install")
-    void installWithNoMainArtifactAndAttachmentsWithClassesDir(InstallMojo mojo) throws Exception {
+    void noMainArtifactWithAttachmentsFailsWhenOutputDirPresent(InstallMojo mojo) throws Exception {
         assertNoMainArtifactWithAttachments(mojo, true);
     }
 
     @Test
     @InjectMojo(goal = "install")
-    void installWithAttachedArtifactDoesNotCreateChecksums(InstallMojo mojo) throws Exception {
+    void attachedJarInstalledWithoutChecksums(InstallMojo mojo) throws Exception {
         mojo.setPluginContext(new HashMap<>());
         mavenProject.setGroupId("org.apache.maven.its.install.ajc");
         mavenProject.setArtifactId("test");
@@ -330,13 +330,13 @@ class InstallMojoTest {
         };
         for (String path : installed) {
             assertInstalled(localRepo, path);
-            assertNoChecksum(localRepo, path);
+            InstallTestHelper.assertNoChecksum(localRepo, path);
         }
     }
 
     @Test
     @InjectMojo(goal = "install")
-    void installPomDoesNotCreateChecksums(InstallMojo mojo) throws Exception {
+    void pomPackagingInstalledWithoutChecksums(InstallMojo mojo) throws Exception {
         mojo.setPluginContext(new HashMap<>());
         mavenProject.setGroupId("org.apache.maven.its.install.pc");
         mavenProject.setArtifactId("test");
@@ -355,7 +355,7 @@ class InstallMojoTest {
         for (String path : installed) {
             assertInstalled(localRepo, path);
         }
-        assertNoChecksum(localRepo, versionDir + "test-1.0-SNAPSHOT.pom");
+        InstallTestHelper.assertNoChecksum(localRepo, versionDir + "test-1.0-SNAPSHOT.pom");
     }
 
     private void assertNoMainArtifactWithAttachments(InstallMojo mojo, boolean classesDirPresent) throws Exception {
@@ -398,13 +398,6 @@ class InstallMojoTest {
     private void assertNotInstalled(File repo, String path) {
         File installed = new File(repo, path);
         assertFalse(installed.isFile(), "File should not be installed: " + installed);
-    }
-
-    private void assertNoChecksum(File repo, String path) {
-        File md5 = new File(repo, path + ".md5");
-        File sha1 = new File(repo, path + ".sha1");
-        assertFalse(md5.exists(), "Unexpected checksum: " + md5);
-        assertFalse(sha1.exists(), "Unexpected checksum: " + sha1);
     }
 
     private String dotToSlashReplacer(String parameter) {
