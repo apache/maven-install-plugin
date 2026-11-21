@@ -749,6 +749,46 @@ public class InstallFileMojoTest {
 
     @Test
     @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.its.install.jsj")
+    @MojoParameter(name = "artifactId", value = "test")
+    @MojoParameter(name = "version", value = "0.1")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(name = "file", value = "${basedir}/target/maven-install-test-1.0-SNAPSHOT.jar")
+    void installFileWithSourcesAndJavadocInstallsAllArtifactsWithoutChecksums(InstallFileMojo mojo) throws Exception {
+        setMojoField(
+                mojo,
+                "sources",
+                Files.createTempFile(tempDir, "sources", ".jar").toFile());
+        setMojoField(
+                mojo,
+                "javadoc",
+                Files.createTempFile(tempDir, "javadoc", ".jar").toFile());
+
+        mojo.execute();
+
+        String versionDir = "org/apache/maven/its/install/jsj/test/0.1/";
+        String[] installed = {
+            "org/apache/maven/its/install/jsj/test/maven-metadata-local.xml",
+            versionDir + "test-0.1.jar",
+            versionDir + "test-0.1.pom",
+            versionDir + "test-0.1-sources.jar",
+            versionDir + "test-0.1-javadoc.jar"
+        };
+        for (String path : installed) {
+            assertInstalled(localRepo, path);
+        }
+        for (String path : new String[] {
+            versionDir + "test-0.1.jar",
+            versionDir + "test-0.1.pom",
+            versionDir + "test-0.1-sources.jar",
+            versionDir + "test-0.1-javadoc.jar"
+        }) {
+            InstallTestHelper.assertNoChecksum(localRepo, path);
+        }
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
     @MojoParameter(name = "packaging", value = "jar")
     void fileDoesNotExists(InstallFileMojo mojo) throws Exception {
         File missing = tempDir.resolve("does-not-exist.jar").toFile();

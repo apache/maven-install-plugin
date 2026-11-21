@@ -358,6 +358,60 @@ class InstallMojoTest {
         InstallTestHelper.assertNoChecksum(localRepo, versionDir + "test-1.0-SNAPSHOT.pom");
     }
 
+    @Test
+    @InjectMojo(goal = "install")
+    void releaseJarInstallsPomJarAndGroupMetadata(InstallMojo mojo) throws Exception {
+        mojo.setPluginContext(new HashMap<>());
+        mavenProject.setGroupId("org.apache.maven.its.install.rj");
+        mavenProject.setArtifactId("test");
+        mavenProject.setVersion("1.0");
+        setProjectArtifact(mavenProject);
+
+        mojo.execute();
+
+        assertInstalled(localRepo, "org/apache/maven/its/install/rj/test/maven-metadata-local.xml");
+        assertInstalled(localRepo, "org/apache/maven/its/install/rj/test/1.0/test-1.0.pom");
+        assertInstalled(localRepo, "org/apache/maven/its/install/rj/test/1.0/test-1.0.jar");
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    void releaseJarWithAttachedSourcesInstallsPomJarSourcesAndMetadata(InstallMojo mojo) throws Exception {
+        mojo.setPluginContext(new HashMap<>());
+        mavenProject.setGroupId("org.apache.maven.its.install.arj");
+        mavenProject.setArtifactId("test");
+        mavenProject.setVersion("1.0");
+        setProjectArtifact(mavenProject);
+        mavenProjectHelper.attachArtifact(
+                mavenProject,
+                "jar",
+                "sources",
+                Files.createTempFile(tempDir, "test-1.0-sources", "jar").toFile());
+
+        mojo.execute();
+
+        assertInstalled(localRepo, "org/apache/maven/its/install/arj/test/maven-metadata-local.xml");
+        assertInstalled(localRepo, "org/apache/maven/its/install/arj/test/1.0/test-1.0.pom");
+        assertInstalled(localRepo, "org/apache/maven/its/install/arj/test/1.0/test-1.0.jar");
+        assertInstalled(localRepo, "org/apache/maven/its/install/arj/test/1.0/test-1.0-sources.jar");
+    }
+
+    @Test
+    @InjectMojo(goal = "install")
+    void releasePomInstallsPomAndGroupMetadata(InstallMojo mojo) throws Exception {
+        mojo.setPluginContext(new HashMap<>());
+        mavenProject.setGroupId("org.apache.maven.its.install.rp");
+        mavenProject.setArtifactId("test");
+        mavenProject.setVersion("1.0");
+        mavenProject.setPackaging("pom");
+        mavenProject.setPomFile(Files.createTempFile(tempDir, "test-1.0", "pom").toFile());
+
+        mojo.execute();
+
+        assertInstalled(localRepo, "org/apache/maven/its/install/rp/test/maven-metadata-local.xml");
+        assertInstalled(localRepo, "org/apache/maven/its/install/rp/test/1.0/test-1.0.pom");
+    }
+
     private void assertNoMainArtifactWithAttachments(InstallMojo mojo, boolean classesDirPresent) throws Exception {
         mojo.setPluginContext(new HashMap<>());
         mavenProject.setGroupId(
