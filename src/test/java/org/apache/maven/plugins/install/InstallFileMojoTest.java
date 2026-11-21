@@ -25,7 +25,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -908,6 +910,135 @@ class InstallFileMojoTest {
             String artifactId,
             String classifier,
             String extension) {}
+
+    /**
+     * Converted from {@code src/it/install-file-generated-pom}: install-file is given only {@code file} and
+     * {@code pomFile}; groupId/artifactId/version are inherited from the supplied POM's parent. The IT asserted
+     * that the POM and JAR land at the inherited 1.0 coordinates, that the group-level metadata exists, and that
+     * the original {@code pomFile} is still on disk. The harness mocks the real {@link ArtifactInstaller} (which
+     * writes the metadata), so the metadata path is expressed through the install request's coordinates.
+     */
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    void installFileWithPomFileInheritsCoordinatesAndKeepsSourcePom(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        Path pomFile = Files.createTempFile("install-file-generated-pom", ".pom");
+        Files.writeString(
+                pomFile,
+                "<project>"
+                        + "<modelVersion>4.0.0</modelVersion>"
+                        + "<parent>"
+                        + "<groupId>org.apache.maven.its.install.55</groupId>"
+                        + "<artifactId>parent</artifactId>"
+                        + "<version>1.0</version>"
+                        + "</parent>"
+                        + "<artifactId>test</artifactId>"
+                        + "</project>");
+        setVariableValueToObject(mojo, "pomFile", pomFile);
+
+        this.groupId = "org.apache.maven.its.install.55";
+        this.artifactId = "test";
+        this.version = "1.0";
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        Artifact pom = getArtifact(null, "pom");
+        Artifact jar = getArtifact(null, "jar");
+        assertEquals(new HashSet<>(Arrays.asList(pom, jar)), new HashSet<>(request.getArtifacts()));
+        assertEquals(pomFile, artifactManager.getPath(pom).orElse(null));
+        assertFileExists(artifactManager.getPath(jar).orElse(null));
+        assertTrue(Files.isRegularFile(pomFile), "the source pomFile must still exist after installation");
+        assertGroupMetadataCoordinates(request, "org/apache/maven/its/install/55/test");
+        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
+    }
+
+    /**
+     * Converted from {@code src/it/jar-sources-javadoc}: install-file with a JAR plus {@code sources} and
+     * {@code javadoc} attachments installs all four files (POM, JAR, sources, javadoc) and no checksum files.
+     * The harness mocks the real {@link ArtifactInstaller} (which writes metadata), so the group-level metadata
+     * path is expressed through the install request's coordinates.
+     */
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "groupId", value = "org.apache.maven.its.install.jsj")
+    @MojoParameter(name = "artifactId", value = "test")
+    @MojoParameter(name = "version", value = "0.1")
+    @MojoParameter(name = "packaging", value = "jar")
+    @MojoParameter(
+            name = "file",
+            value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
+    @MojoParameter(
+            name = "sources",
+            value = "${project.basedir}/target/test-classes/unit/attached-artifact-test-1.0-SNAPSHOT.jar")
+    @MojoParameter(
+            name = "javadoc",
+            value = "${project.basedir}/target/test-classes/unit/attached-artifact-test-1.0-SNAPSHOT.jar")
+    void installFileWithSourcesAndJavadocInstallsAllFourFilesWithoutChecksums(InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        assignValuesForParameter(mojo);
+
+        Artifact pom = getArtifact(null, "pom");
+        Artifact jar = getArtifact(null, "jar");
+        Artifact sources = getArtifact("sources", "jar");
+        Artifact javadoc = getArtifact("javadoc", "jar");
+        // The generated POM is a temporary file on the harness's in-memory file system that the mojo deletes
+        // (and clears the path for) in its finally block, so capture its content while the install call is in
+        // flight; the real jar/sources/javadoc inputs are checked as ordinary files below.
+        Map<Artifact, Path> installedPaths = new HashMap<>();
+        AtomicReference<Model> generatedPom = new AtomicReference<>();
+        ArtifactInstallerRequest request = execute(mojo, air -> {
+            ArtifactManager requestArtifactManager = air.getSession().getService(ArtifactManager.class);
+            for (Artifact artifact : Arrays.asList(jar, sources, javadoc)) {
+                installedPaths.put(
+                        artifact, requestArtifactManager.getPath(artifact).orElse(null));
+            }
+            generatedPom.set(readModelFrom(air, pom));
+        });
+
+        assertNotNull(request);
+        assertEquals(new HashSet<>(Arrays.asList(pom, jar, sources, javadoc)), new HashSet<>(request.getArtifacts()));
+        for (Artifact artifact : Arrays.asList(jar, sources, javadoc)) {
+            Path path = installedPaths.get(artifact);
+            assertTrue(
+                    path != null && Files.exists(path),
+                    () -> artifact.key() + " should have an existing file, got " + path);
+        }
+        assertEquals("4.0.0", generatedPom.get().getModelVersion());
+        assertEquals(groupId, generatedPom.get().getGroupId());
+        assertEquals(artifactId, generatedPom.get().getArtifactId());
+        assertEquals(version, generatedPom.get().getVersion());
+        assertEquals(
+                "org/apache/maven/its/install/jsj/test/0.1/test-0.1.jar",
+                repoRelativePath(session.getPathForLocalArtifact(jar)));
+        assertEquals(
+                "org/apache/maven/its/install/jsj/test/0.1/test-0.1.pom",
+                repoRelativePath(session.getPathForLocalArtifact(pom)));
+        assertEquals(
+                "org/apache/maven/its/install/jsj/test/0.1/test-0.1-sources.jar",
+                repoRelativePath(session.getPathForLocalArtifact(sources)));
+        assertEquals(
+                "org/apache/maven/its/install/jsj/test/0.1/test-0.1-javadoc.jar",
+                repoRelativePath(session.getPathForLocalArtifact(javadoc)));
+        assertTrue(request.getArtifacts().stream()
+                .noneMatch(a -> "md5".equals(a.getExtension()) || "sha1".equals(a.getExtension())));
+        assertGroupMetadataCoordinates(request, "org/apache/maven/its/install/jsj/test");
+        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
+    }
+
+    private void assertGroupMetadataCoordinates(ArtifactInstallerRequest request, String groupArtifactPath) {
+        Artifact pom = request.getArtifacts().stream()
+                .filter(a -> "pom".equals(a.getExtension()))
+                .findFirst()
+                .orElseThrow();
+        Path pomPath = request.getSession().getPathForLocalArtifact(pom);
+        assertEquals(
+                groupArtifactPath + "/maven-metadata-local.xml",
+                InstallTestHelper.repoRelativePath(InstallTestHelper.groupLevelMetadataPath(pomPath), LOCAL_REPO));
+    }
 
     private static String repoRelativePath(Path path) {
         // The harness returns relative Paths from a different FileSystem provider than Paths.get, so compare strings.

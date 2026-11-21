@@ -19,6 +19,7 @@
 package org.apache.maven.plugins.install;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
@@ -122,6 +123,71 @@ class InstallMojoPomPackagingTest {
         assertTrue(request.getArtifacts().stream()
                 .noneMatch(a -> "md5".equals(a.getExtension()) || "sha1".equals(a.getExtension())));
         InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
+    }
+
+    /** Converted from {@code src/it/release-pom}: a plain release POM installs only its POM. */
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
+    void releasePomInstallsPom(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        ProjectStub project = (ProjectStub) getVariableValueFromObject(mojo, "project");
+        project.setGroupId("org.apache.maven.its.install.rp");
+        project.setArtifactId("test");
+        project.setVersion("1.0");
+        artifactManager.setPath(project.getPomArtifact(), project.getPomPath());
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        assertEquals(
+                List.of("org.apache.maven.its.install.rp:test:pom:1.0"),
+                request.getArtifacts().stream().map(Artifact::key).toList());
+        assertMetadataCoordinates(request, "org/apache/maven/its/install/rp/test", "1.0");
+    }
+
+    /**
+     * Converted from {@code src/it/snapshot-pom}: a snapshot POM installs its POM at the version path and the IT's
+     * two metadata locations. {@code installIfPackagingIsPom} covers the artifact part; this adds the metadata
+     * coordinates, which are the only assertion that IT had beyond it.
+     */
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
+    void snapshotPomInstallsPomWithVersionedMetadata(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        ProjectStub project = (ProjectStub) getVariableValueFromObject(mojo, "project");
+        project.setGroupId("org.apache.maven.its.install.sp");
+        project.setArtifactId("test");
+        project.setVersion("1.0-SNAPSHOT");
+        artifactManager.setPath(project.getPomArtifact(), project.getPomPath());
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        assertEquals(
+                List.of("org.apache.maven.its.install.sp:test:pom:1.0-SNAPSHOT"),
+                request.getArtifacts().stream().map(Artifact::key).toList());
+        assertMetadataCoordinates(request, "org/apache/maven/its/install/sp/test", "1.0-SNAPSHOT");
+    }
+
+    /**
+     * Asserts the group-level and version-level {@code maven-metadata-local.xml} locations that the IT checked as
+     * files. The harness mocks the real {@link ArtifactInstaller}, which writes that metadata, so the paths are
+     * derived from the installed POM's coordinates handed to the session (see {@link InstallTestHelper}).
+     */
+    private void assertMetadataCoordinates(ArtifactInstallerRequest request, String groupArtifactPath, String version) {
+        Artifact pom = request.getArtifacts().stream()
+                .filter(a -> "pom".equals(a.getExtension()))
+                .findFirst()
+                .orElseThrow();
+        Path pomPath = request.getSession().getPathForLocalArtifact(pom);
+        assertEquals(
+                groupArtifactPath + "/maven-metadata-local.xml",
+                InstallTestHelper.repoRelativePath(InstallTestHelper.groupLevelMetadataPath(pomPath), LOCAL_REPO));
+        assertEquals(
+                groupArtifactPath + "/" + version + "/maven-metadata-local.xml",
+                InstallTestHelper.repoRelativePath(InstallTestHelper.versionLevelMetadataPath(pomPath), LOCAL_REPO));
     }
 
     @Provides
