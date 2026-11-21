@@ -346,6 +346,115 @@ class InstallMojoTest {
         InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
+    /** Converted from {@code src/it/release-jar}: a plain release JAR installs its POM and JAR. */
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
+    void releaseJarInstallsPomAndJar(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        ProjectStub project = (ProjectStub) getVariableValueFromObject(mojo, "project");
+        project.setGroupId("org.apache.maven.its.install.rj");
+        project.setArtifactId("test");
+        project.setVersion("1.0");
+        ProducedArtifactStub main =
+                new ProducedArtifactStub("org.apache.maven.its.install.rj", "test", "", "1.0", "jar");
+        project.setMainArtifact(main);
+        artifactManager.setPath(
+                main, Paths.get(getBasedir(), "target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar"));
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        assertEquals(
+                Arrays.asList(
+                        "org.apache.maven.its.install.rj:test:pom:1.0", "org.apache.maven.its.install.rj:test:jar:1.0"),
+                request.getArtifacts().stream().map(Artifact::key).toList());
+        assertMetadataCoordinates(request, "org/apache/maven/its/install/rj/test", "1.0");
+    }
+
+    /**
+     * Converted from {@code src/it/attach-release-jar}: a release JAR with an attached sources JAR installs the
+     * POM, the main JAR and the classified sources JAR. {@code basicInstallWithAttachedArtifacts} covers the
+     * attachment mechanics, but used a different artifactId for the attachment and a snapshot version; this test
+     * preserves the IT's same-GAV sources classifier on a release version.
+     */
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
+    void releaseJarWithAttachedSourcesInstallsPomJarAndSources(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        ProjectStub project = (ProjectStub) getVariableValueFromObject(mojo, "project");
+        project.setGroupId("org.apache.maven.its.install.arj");
+        project.setArtifactId("test");
+        project.setVersion("1.0");
+        ProducedArtifactStub main =
+                new ProducedArtifactStub("org.apache.maven.its.install.arj", "test", "", "1.0", "jar");
+        project.setMainArtifact(main);
+        artifactManager.setPath(
+                main, Paths.get(getBasedir(), "target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar"));
+        projectManager.attachArtifact(
+                project,
+                new ProducedArtifactStub("org.apache.maven.its.install.arj", "test", "sources", "1.0", "jar"),
+                Paths.get(getBasedir()).resolve(ATTACHED_ARTIFACT_JAR));
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        assertEquals(
+                Arrays.asList(
+                        "org.apache.maven.its.install.arj:test:pom:1.0",
+                        "org.apache.maven.its.install.arj:test:jar:1.0",
+                        "org.apache.maven.its.install.arj:test:jar:sources:1.0"),
+                request.getArtifacts().stream().map(Artifact::key).toList());
+        assertMetadataCoordinates(request, "org/apache/maven/its/install/arj/test", "1.0");
+    }
+
+    /** Converted from {@code src/it/snapshot-jar}: a snapshot JAR installs its POM and JAR at the version path. */
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
+    void snapshotJarInstallsPomAndJarWithVersionedMetadata(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        ProjectStub project = (ProjectStub) getVariableValueFromObject(mojo, "project");
+        project.setGroupId("org.apache.maven.its.install.sj");
+        project.setArtifactId("test");
+        project.setVersion("1.0-SNAPSHOT");
+        ProducedArtifactStub main =
+                new ProducedArtifactStub("org.apache.maven.its.install.sj", "test", "", "1.0-SNAPSHOT", "jar");
+        project.setMainArtifact(main);
+        artifactManager.setPath(
+                main, Paths.get(getBasedir(), "target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar"));
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        assertEquals(
+                Arrays.asList(
+                        "org.apache.maven.its.install.sj:test:pom:1.0-SNAPSHOT",
+                        "org.apache.maven.its.install.sj:test:jar:1.0-SNAPSHOT"),
+                request.getArtifacts().stream().map(Artifact::key).toList());
+        assertMetadataCoordinates(request, "org/apache/maven/its/install/sj/test", "1.0-SNAPSHOT");
+    }
+
+    /**
+     * Asserts the group-level and version-level {@code maven-metadata-local.xml} locations that the IT checked as
+     * files. The harness mocks the real {@link ArtifactInstaller}, which writes that metadata, so the paths are
+     * derived from the installed POM's coordinates handed to the session (see {@link InstallTestHelper}).
+     */
+    private void assertMetadataCoordinates(ArtifactInstallerRequest request, String groupArtifactPath, String version) {
+        Artifact pom = request.getArtifacts().stream()
+                .filter(a -> "pom".equals(a.getExtension()))
+                .findFirst()
+                .orElseThrow();
+        Path pomPath = request.getSession().getPathForLocalArtifact(pom);
+        assertEquals(
+                groupArtifactPath + "/maven-metadata-local.xml",
+                InstallTestHelper.repoRelativePath(InstallTestHelper.groupLevelMetadataPath(pomPath), LOCAL_REPO));
+        assertEquals(
+                groupArtifactPath + "/" + version + "/maven-metadata-local.xml",
+                InstallTestHelper.repoRelativePath(InstallTestHelper.versionLevelMetadataPath(pomPath), LOCAL_REPO));
+    }
+
     private void attachClassifiedJar(Project project, String classifier) {
         projectManager.attachArtifact(
                 project,
