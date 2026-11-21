@@ -593,7 +593,7 @@ public class InstallFileMojoTest {
     }
 
     // -------------------------------------------------------------------------
-    // Tests converted from the minstall-121 ITs (file/pomFile/packaging/extension)
+    // Tests converted from the install-file packaging/extension ITs (file/pomFile/packaging)
     // -------------------------------------------------------------------------
 
     private static final class PackagingCase {
@@ -712,7 +712,7 @@ public class InstallFileMojoTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("packagingCases")
     @InjectMojo(goal = "install-file")
-    void installFileWithPackagingAndExtension(PackagingCase testCase, InstallFileMojo mojo) throws Exception {
+    void installFileUsesPackagingForArtifactExtension(PackagingCase testCase, InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
 
         Path caseDir = tempDir.resolve(testCase.artifactId());
