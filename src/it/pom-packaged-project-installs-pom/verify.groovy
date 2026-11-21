@@ -18,18 +18,18 @@
  */
 
 // jar:jar on a pom-packaged project sets project.getArtifact().getFile() to the produced JAR.
-// A subsequent install:install must install the POM, not that JAR.
+// A subsequent install:install must install the POM, not that JAR. Maven 4 also installs a
+// -build.pom next to the consumer POM, so check every installed .pom file.
 
-File installed = new File( localRepositoryPath,
-    "org/apache/maven/its/install/minstall315/test/1.0/test-1.0.pom" )
-
+File dir = new File( localRepositoryPath, "org/apache/maven/its/install/minstall315/test/1.0" )
+File installed = new File( dir, "test-1.0.pom" )
 assert installed.isFile() : "Installed file not found: " + installed
 
-// The installed file must not be a JAR (ZIP). Check the magic bytes: PK\x03\x04 = 0x50 0x4B 0x03 0x04.
-byte[] magic = new byte[4]
-new FileInputStream( installed ).with { stream ->
-    stream.read( magic )
+// A JAR (ZIP) starts with the magic bytes PK (0x50 0x4B).
+for ( File pom : dir.listFiles().findAll { it.name.endsWith( ".pom" ) } )
+{
+    byte[] magic = new byte[2]
+    pom.withInputStream { it.read( magic ) }
+    assert !( magic[0] == 0x50 && magic[1] == 0x4B ) :
+        "install:install installed a JAR (ZIP) instead of the POM as " + pom.name
 }
-
-assert !( magic[0] == 0x50 && magic[1] == 0x4B ) :
-    "install:install installed a JAR (ZIP) instead of the POM for a pom-packaged project"
