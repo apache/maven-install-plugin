@@ -30,11 +30,5 @@ String[] paths =
 for ( String path : paths )
 {
     File file = new File( localRepositoryPath, path );
-    System.out.println( "Checking for existence of " + file );
-    if ( !file.isFile() )
-    {
-        throw new FileNotFoundException( "Missing: " + file.getAbsolutePath() );
-    }
+    assert file.isFile() : "Missing: " + file.getAbsolutePath();
 }
-
-return true;
