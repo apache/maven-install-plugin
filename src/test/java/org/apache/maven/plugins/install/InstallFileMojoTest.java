@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+import java.util.stream.Stream;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.LocalRepository;
@@ -41,6 +42,7 @@ import org.apache.maven.api.di.Priority;
 import org.apache.maven.api.di.Provides;
 import org.apache.maven.api.di.Singleton;
 import org.apache.maven.api.model.Model;
+import org.apache.maven.api.plugin.Log;
 import org.apache.maven.api.plugin.MojoException;
 import org.apache.maven.api.plugin.testing.InjectMojo;
 import org.apache.maven.api.plugin.testing.MojoParameter;
@@ -56,6 +58,8 @@ import org.apache.maven.testing.plugin.stubs.ArtifactStub;
 import org.codehaus.plexus.util.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.maven.api.plugin.testing.MojoExtension.getBasedir;
 import static org.apache.maven.api.plugin.testing.MojoExtension.getVariableValueFromObject;
@@ -792,6 +796,124 @@ class InstallFileMojoTest {
         assertEquals(artifactId, model.get().getArtifactId());
         assertEquals(version, model.get().getVersion());
         InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), OVERRIDE_REPO));
+    }
+
+    /**
+     * The six converted install-file ITs supplied only {@code file}, {@code pomFile} and
+     * {@code packaging} through {@code test.properties}; groupId/version were adopted from the supplied POM's
+     * parent and artifactId from the POM itself. Each IT asserted that these files existed in the local repository:
+     *
+     * <pre>
+     *   org/apache/maven/its/install/121/&lt;artifactId&gt;/maven-metadata-local.xml
+     *   org/apache/maven/its/install/121/&lt;artifactId&gt;/1.0/&lt;artifactId&gt;-1.0.&lt;extension&gt;
+     *   org/apache/maven/its/install/121/&lt;artifactId&gt;/1.0/&lt;artifactId&gt;-1.0.pom
+     * </pre>
+     *
+     * plus that the source {@code test-0.1.pom} and input file still existed in the working directory. The metadata
+     * file is written by the real ArtifactInstaller (mocked by this harness), so it is the one IT assertion that
+     * cannot be made here; the coordinates that determine its path are asserted below.
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("packagingCases")
+    void installFileUsesPackagingForArtifactExtension(PackagingCase testCase) throws Exception {
+        // The MojoTest harness's ParameterResolver cannot be combined with @ParameterizedTest (both claim the
+        // mojo parameter), so wire the mojo with the same injected services the harness would supply.
+        InstallFileMojo mojo = new InstallFileMojo();
+        setVariableValueToObject(mojo, "log", mock(Log.class));
+        setVariableValueToObject(mojo, "session", session);
+
+        Path fixtureDir = Paths.get(getBasedir(), "target/test-classes/unit/artifact-extension", testCase.directory());
+        Path file = fixtureDir.resolve(testCase.fileName());
+        Path pomFile = fixtureDir.resolve("test-0.1.pom");
+        assertTrue(Files.isRegularFile(file), () -> "missing IT fixture " + file);
+        assertTrue(Files.isRegularFile(pomFile), () -> "missing IT fixture " + pomFile);
+
+        // Reproduce the IT inputs: only file/pomFile/packaging were supplied; the coordinates come from the POM.
+        setVariableValueToObject(mojo, "file", file);
+        setVariableValueToObject(mojo, "pomFile", pomFile);
+        setVariableValueToObject(mojo, "packaging", testCase.packaging());
+        if (testCase.classifier() != null) {
+            // A real Maven ArtifactTypeRegistry maps java-source to classifier "sources"; the MojoTest harness's
+            // ArtifactFactory stub does not, so supply it to preserve the IT's asserted -sources.jar coordinates.
+            setVariableValueToObject(mojo, "classifier", testCase.classifier());
+        }
+
+        this.groupId = "org.apache.maven.its.install.121";
+        this.artifactId = testCase.artifactId();
+        this.version = "1.0";
+
+        AtomicReference<Model> model = new AtomicReference<>();
+        ArtifactInstallerRequest request =
+                execute(mojo, air -> model.set(readModelFrom(air, getArtifact(null, "pom"))));
+
+        assertNotNull(request);
+        Artifact main = getArtifact(testCase.classifier(), testCase.extension());
+        Artifact pom = getArtifact(null, "pom");
+        assertEquals(new HashSet<>(Arrays.asList(main, pom)), new HashSet<>(request.getArtifacts()));
+
+        String groupPath = "org/apache/maven/its/install/121/" + testCase.artifactId();
+        String versionPath = groupPath + "/1.0/" + testCase.artifactId() + "-1.0";
+        assertEquals(
+                versionPath
+                        + (testCase.classifier() != null ? "-" + testCase.classifier() : "")
+                        + "." + testCase.extension(),
+                repoRelativePath(session.getPathForLocalArtifact(main)));
+        assertEquals(versionPath + ".pom", repoRelativePath(session.getPathForLocalArtifact(pom)));
+
+        // The POM installed is the one supplied by the IT, and its coordinates are the ones used for install.
+        assertEquals(pomFile, artifactManager.getPath(pom).orElse(null));
+        assertEquals(testCase.artifactId(), model.get().getArtifactId());
+        assertEquals("org.apache.maven.its.install.121", model.get().getParent().getGroupId());
+        assertEquals("1.0", model.get().getParent().getVersion());
+        assertEquals(groupId, getVariableValueFromObject(mojo, "groupId"));
+        assertEquals(artifactId, getVariableValueFromObject(mojo, "artifactId"));
+        assertEquals(version, getVariableValueFromObject(mojo, "version"));
+
+        assertFileExists(artifactManager.getPath(main).orElse(null));
+        assertEquals(
+                LOCAL_REPO,
+                request.getSession().getLocalRepository().getPath().toString().replace(File.separator, "/"));
+        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
+    }
+
+    static Stream<PackagingCase> packagingCases() {
+        return Stream.of(
+                new PackagingCase("maven-plugin", "test", "test-0.1.jar", "maven-plugin", "test", null, "jar"),
+                new PackagingCase("bundle", "bundle", "test-0.1.jar", "bundle", "maven-bundle", null, "jar"),
+                new PackagingCase(
+                        "java-source",
+                        "java-source",
+                        "test-0.1.jar",
+                        "java-source",
+                        "test-java-source",
+                        "sources",
+                        "jar"),
+                new PackagingCase(
+                        "maven-archetype",
+                        "maven-archetype",
+                        "test-0.1.jar",
+                        "maven-archetype",
+                        "maven-archetype",
+                        null,
+                        "jar"),
+                new PackagingCase("targz", "targz", "test-0.1.tar.gz", "war", "test-targz", null, "tar.gz"),
+                new PackagingCase("war", "war", "test-0.1.war", "war", "test-war", null, "war"));
+    }
+
+    record PackagingCase(
+            String name,
+            String directory,
+            String fileName,
+            String packaging,
+            String artifactId,
+            String classifier,
+            String extension) {}
+
+    private static String repoRelativePath(Path path) {
+        // The harness returns relative Paths from a different FileSystem provider than Paths.get, so compare strings.
+        String prefix = LOCAL_REPO + "/";
+        String value = path.toString().replace(File.separator, "/");
+        return value.startsWith(prefix) ? value.substring(prefix.length()) : value;
     }
 
     private void assertFileExistsInRequest(ArtifactInstallerRequest request, Artifact artifact) {
