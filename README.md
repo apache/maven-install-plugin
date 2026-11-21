@@ -14,83 +14,25 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-Contributing to [Apache Maven Install Plugin](https://maven.apache.org/plugins/maven-install-plugin/)
-======================
+# Apache Maven Install Plugin
 
-[![Apache License, Version 2.0, January 2004](https://img.shields.io/github/license/apache/maven.svg?label=License)][license]
-[![Maven Central](https://img.shields.io/maven-central/v/org.apache.maven.plugins/maven-install-plugin.svg?label=Maven%20Central&versionPrefix=3.)](https://search.maven.org/artifact/org.apache.maven.plugins/maven-install-plugin)
-[![Maven Central](https://img.shields.io/maven-central/v/org.apache.maven.plugins/maven-install-plugin.svg?label=Maven%20Central)](https://search.maven.org/artifact/org.apache.maven.plugins/maven-install-plugin)
+[![Apache License, Version 2.0, January 2004](https://img.shields.io/github/license/apache/maven.svg?label=License)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Maven Central](https://img.shields.io/maven-central/v/org.apache.maven.plugins/maven-install-plugin.svg?label=Maven%20Central&versionPrefix=4.)](https://central.sonatype.com/artifact/org.apache.maven.plugins/maven-install-plugin)
 [![Reproducible Builds](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jvm-repo-rebuild/reproducible-central/master/content/org/apache/maven/plugins/maven-install-plugin/badge.json)](https://github.com/jvm-repo-rebuild/reproducible-central/blob/master/content/org/apache/maven/plugins/maven-install-plugin/README.md)
-<!--
-[![Jenkins Status](https://img.shields.io/jenkins/s/https/ci-maven.apache.org/job/Maven/job/maven-box/job/maven-install-plugin/job/master.svg?)][build]
-[![Jenkins tests](https://img.shields.io/jenkins/t/https/ci-maven.apache.org/job/Maven/job/maven-box/job/maven-install-plugin/job/master.svg?)][test-results]
--->
+[![Verify](https://github.com/apache/maven-install-plugin/actions/workflows/maven-verify.yml/badge.svg?branch=maven-install-plugin-4.x)](https://github.com/apache/maven-install-plugin/actions/workflows/maven-verify.yml)
 
-You have found a bug or you have an idea for a cool new feature? Contributing
-code is a great way to give something back to the open source community. Before
-you dig right into the code, there are a few guidelines that we need
-contributors to follow so that we can have a chance of keeping on top of
-things.
+The Install Plugin copies a project's artifacts into the local Maven repository (`install:install`) and installs externally built files there (`install:install-file`). User documentation: <https://maven.apache.org/plugins/maven-install-plugin/>.
 
-Getting Started
----------------
+This branch (`maven-install-plugin-4.x`) is the 4.x line. It requires Maven 4 and Java 17. The 3.x line lives on [`master`](https://github.com/apache/maven-install-plugin/tree/master).
 
-+ Make sure you have a [GitHub account](https://github.com/signup/free).
-+ If you're planning to implement a new feature, it makes sense to discuss your changes 
-  on the [dev list][ml-list] first. 
-  This way you can make sure you're not wasting your time on something that isn't 
-  considered to be in Apache Maven's scope.
-+ Submit a ticket for your issue, assuming one does not already exist.
-  + Clearly describe the issue, including steps to reproduce when it is a bug.
-  + Make sure you fill in the earliest version that you know has the issue.
-+ Fork the repository on GitHub.
+## Build
 
-Making and Submitting Changes
---------------
+```bash
+mvn verify
+```
 
-We accept Pull Requests via GitHub. The [developer mailing list][ml-list] is the
-main channel of communication for contributors.  
-There are some guidelines which will make applying PRs easier for us:
-+ Create a topic branch from where you want to base your work (this is usually the master branch).
-  Push your changes to a topic branch in your fork of the repository.
-+ Make commits of logical units.
-+ Respect the original code style: by using the same [codestyle][code-style],
-  patches should only highlight the actual difference, not being disturbed by any formatting issues:
-  + Only use spaces for indentation.
-  + Create minimal diffs - disable on save actions like reformat source code or organize imports. 
-    If you feel the source code should be reformatted, create a separate PR for this change.
-  + Check for unnecessary whitespace with `git diff --check` before committing.
-+ Make sure you have added the necessary tests (JUnit/IT) for your changes.
-+ Run all the tests with `mvn -Prun-its verify` to assure nothing else was accidentally broken.
-+ Submit a pull request to the repository in the Apache organization.
+Add `-Prun-its` to run the integration tests in `src/it`.
 
-If you plan to contribute on a regular basis, please consider filing a [contributor license agreement][cla].
+## Contribute
 
-## Tests
-
-Unit tests are JUnit 5 (Jupiter) and live in `src/test/java`. New test code must not add JUnit 4, the vintage engine, Hamcrest, or `org.codehaus.plexus.util`; use JDK/Groovy APIs instead. Name tests after the behaviour they check, not after JIRA keys.
-
-Integration tests in `src/it` are reserved for behaviour that needs a real Maven build: reactor and deferred installation, `-T2` parallel builds, `-f` alternate POMs, embedded-POM execution and the `setup-*` support projects. Everything a mojo unit test can assert with a mocked session/repository belongs in `src/test`. Keep `verify.groovy` scripts in plain `assert` form.
-
-The Maven 4 branch (`maven-install-plugin-4.x`) uses the Maven 4 `@MojoTest` harness. Its `ArtifactInstaller` is mocked, so `maven-metadata-local.xml` is not written during unit tests; assert the coordinate-derived paths from the install request instead of a physical file. The 3.x line's harness writes real files. Both branches keep the same IT names and test-case names, but do not share API-specific test code: 4.x stays Maven 4 only.
-
-Run `mvn -Prun-its verify` for the full build, or `mvn -o -B test spotless:check` for the unit suite and formatting.
-
-Additional Resources
---------------------
-
-+ [Contributing patches](https://maven.apache.org/guides/development/guide-maven-development.html#Creating_and_submitting_a_patch)
-+ [Apache Maven Install JIRA project page](https://issues.apache.org/jira/projects/MINSTALL/issues)
-+ [Contributor License Agreement][cla]
-+ [General GitHub documentation](https://help.github.com/)
-+ [GitHub pull request documentation](https://help.github.com/send-pull-requests/)
-+ [Apache Maven Twitter Account](https://twitter.com/ASFMavenProject)
-+ #Maven IRC channel on freenode.org
-
-[license]: https://www.apache.org/licenses/LICENSE-2.0
-[ml-list]: https://maven.apache.org/mailing-lists.html
-[code-style]: https://maven.apache.org/developers/conventions/code.html
-[cla]: https://www.apache.org/licenses/#clas
-[maven-wiki]: https://cwiki.apache.org/confluence/display/MAVEN/Index
-[test-results]: https://ci-maven.apache.org/job/Maven/job/maven-box/job/maven-install-plugin/job/master/lastCompletedBuild/testReport/
-[build]: https://ci-maven.apache.org/job/Maven/job/maven-box/job/maven-install-plugin/job/master/
+Report bugs and feature requests in [GitHub issues](https://github.com/apache/maven-install-plugin/issues) and send pull requests against `maven-install-plugin-4.x`. Repository conventions for tests, compatibility and code style are in [AGENTS.md](AGENTS.md). Report security issues privately as described in [SECURITY.md](SECURITY.md).

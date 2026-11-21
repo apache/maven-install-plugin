@@ -29,7 +29,7 @@ under the License.
 
 Apache Maven has a two level strategy to resolve and distribute files, which we call artifacts. The first level is called the `local repository`, which is the artifact cache on your system, by default located at `${user.home}/.m2/repository`. When executing Maven, it first looks in this local cache for artifacts. If the artifact cannot be found here, Maven will access the remote repositories to find the artifact. Once found it will be stored into the local repository, so it's available for current and future usage.
 
-With the `maven-install-plugin` you can put your artifacts in the local repository. To upload artifacts to a remote repository, you need to use the [maven-deploy-plugin](http://maven.apache.org/plugins/maven-deploy-plugin/).
+With the `maven-install-plugin` you can put your artifacts in the local repository. To upload artifacts to a remote repository, you need to use the [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/).
 
 ## The `install:install` goal
 
@@ -53,8 +53,7 @@ mvn install:install-file -Dfile=your-artifact-1.0.jar \
                          [-Dversion=1.0] \
                          [-Dpackaging=jar] \
                          [-Dclassifier=sources] \
-                         [-DgeneratePom=true] \
-                         [-DcreateChecksum=true]
+                         [-DgeneratePom=true]
 ```
 
 - the groupId, artifactId, version and packaging of the file to install. These can be taken from the specified pomFile, extracted from the pom.xml inside the artifact, and overridden or specified using the command line. When the pomFile contains a _parent_ section, the parent's groupId can be considered if the groupId is not specified further for the current project or on the command line.
