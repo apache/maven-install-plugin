@@ -17,7 +17,7 @@ specific language governing permissions and limitations
 under the License.
 -->
 
-# Agent Guide for maven-install-plugin
+# Agent guide for maven-install-plugin
 
 This file is read by automated agents (security scanners, code
 analyzers, AI assistants) operating on this repository.
@@ -29,7 +29,28 @@ Security model: [SECURITY.md](./SECURITY.md)
 Agents that scan this repository should consult `SECURITY.md` and the
 threat model it links before reporting issues.
 
-Points at the Apache Maven family umbrella security model.
+## Compatibility
+
+This branch is the 3.x line: it requires Maven 3.9.0 or later and Java 8. Code against the Maven 3.9 and Resolver 1.9 APIs only; Maven 4 APIs and code from the 4.x branch do not belong here.
+
+- Goal names, parameter names and user properties are public API. Never rename
+  or remove one: `maven.install.skip`, `installAtEnd`, `allowIncompleteProjects`,
+  and the `install-file` properties (`file`, `pomFile`, `groupId`, `artifactId`,
+  `version`, `packaging`, `classifier`, `sources`, `javadoc`, `generatePom`,
+  `localRepositoryPath`, `extension`).
+- Site pages under `src/site` are deep-linked from outside: do not rename a page
+  or change a heading's anchor.
+- Fixes land here first and are forward-ported to `maven-install-plugin-4.x`. Known differences between the lines: `installAtEnd`
+  defaults to `false` on 3.x and `true` on 4.x, and the `install-file`
+  `extension` parameter exists only on 3.x.
+
+## Coding
+
+Use test-first programming. Before fixing a bug or implementing a feature,
+write a test that exposes the bug and verify the test fails.
+
+The bytecode floor is Java 8. Before submitting a PR, run `mvn spotless:apply`
+to format the files, then `mvn verify`. Run Spotless with JDK 17 or 21.
 
 ## Tests
 
