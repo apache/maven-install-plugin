@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+import java.util.stream.Stream;
 
 import org.apache.maven.api.plugin.testing.Basedir;
 import org.apache.maven.api.plugin.testing.InjectMojo;
@@ -38,11 +39,14 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.xml.XmlStreamReader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -586,6 +590,190 @@ public class InstallFileMojoTest {
         InstallTestHelper.assertNoChecksum(overrideRepo, jarPath);
         InstallTestHelper.assertNoChecksum(overrideRepo, pomPath);
         assertFalse(new File(localRepo, jarPath).exists(), "The artifact should only be installed in " + overrideRepo);
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests converted from the minstall-121 ITs (file/pomFile/packaging/extension)
+    // -------------------------------------------------------------------------
+
+    private static final class PackagingCase {
+        private final String sourceFileName;
+        private final String packaging;
+        private final String extension;
+        private final String artifactId;
+        private final String artifactPath;
+        private final String pomPath;
+        private final String metadataPath;
+
+        PackagingCase(
+                String sourceFileName,
+                String packaging,
+                String extension,
+                String artifactId,
+                String artifactPath,
+                String pomPath,
+                String metadataPath) {
+            this.sourceFileName = sourceFileName;
+            this.packaging = packaging;
+            this.extension = extension;
+            this.artifactId = artifactId;
+            this.artifactPath = artifactPath;
+            this.pomPath = pomPath;
+            this.metadataPath = metadataPath;
+        }
+
+        String sourceFileName() {
+            return sourceFileName;
+        }
+
+        String packaging() {
+            return packaging;
+        }
+
+        String extension() {
+            return extension;
+        }
+
+        String artifactId() {
+            return artifactId;
+        }
+
+        String artifactPath() {
+            return artifactPath;
+        }
+
+        String pomPath() {
+            return pomPath;
+        }
+
+        String metadataPath() {
+            return metadataPath;
+        }
+
+        @Override
+        public String toString() {
+            return artifactId;
+        }
+    }
+
+    private static Stream<PackagingCase> packagingCases() {
+        String repoPrefix = "org/apache/maven/its/install/121/";
+        return Stream.of(
+                new PackagingCase(
+                        "test-0.1.jar",
+                        "maven-plugin",
+                        null,
+                        "test",
+                        repoPrefix + "test/1.0/test-1.0.jar",
+                        repoPrefix + "test/1.0/test-1.0.pom",
+                        repoPrefix + "test/maven-metadata-local.xml"),
+                new PackagingCase(
+                        "test-0.1.jar",
+                        "bundle",
+                        "jar",
+                        "maven-bundle",
+                        repoPrefix + "maven-bundle/1.0/maven-bundle-1.0.jar",
+                        repoPrefix + "maven-bundle/1.0/maven-bundle-1.0.pom",
+                        repoPrefix + "maven-bundle/maven-metadata-local.xml"),
+                new PackagingCase(
+                        "test-0.1.jar",
+                        "java-source",
+                        null,
+                        "test-java-source",
+                        repoPrefix + "test-java-source/1.0/test-java-source-1.0-sources.jar",
+                        repoPrefix + "test-java-source/1.0/test-java-source-1.0.pom",
+                        repoPrefix + "test-java-source/maven-metadata-local.xml"),
+                new PackagingCase(
+                        "test-0.1.jar",
+                        "maven-archetype",
+                        "jar",
+                        "maven-archetype",
+                        repoPrefix + "maven-archetype/1.0/maven-archetype-1.0.jar",
+                        repoPrefix + "maven-archetype/1.0/maven-archetype-1.0.pom",
+                        repoPrefix + "maven-archetype/maven-metadata-local.xml"),
+                new PackagingCase(
+                        "test-0.1.tar.gz",
+                        "war",
+                        "tar.gz",
+                        "test-targz",
+                        repoPrefix + "test-targz/1.0/test-targz-1.0.tar.gz",
+                        repoPrefix + "test-targz/1.0/test-targz-1.0.pom",
+                        repoPrefix + "test-targz/maven-metadata-local.xml"),
+                new PackagingCase(
+                        "test-0.1.war",
+                        "war",
+                        null,
+                        "test-war",
+                        repoPrefix + "test-war/1.0/test-war-1.0.war",
+                        repoPrefix + "test-war/1.0/test-war-1.0.pom",
+                        repoPrefix + "test-war/maven-metadata-local.xml"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("packagingCases")
+    @InjectMojo(goal = "install-file")
+    void installFileWithPackagingAndExtension(PackagingCase testCase, InstallFileMojo mojo) throws Exception {
+        assertNotNull(mojo);
+
+        Path caseDir = tempDir.resolve(testCase.artifactId());
+        Files.createDirectories(caseDir);
+        File pomFile = caseDir.resolve("test-0.1.pom").toFile();
+        Files.write(pomFile.toPath(), pomXmlWithParent(testCase.artifactId()).getBytes(StandardCharsets.UTF_8));
+        File sourceFile = caseDir.resolve(testCase.sourceFileName()).toFile();
+        Files.copy(
+                MojoExtension.getTestFile("target/maven-install-test-1.0-SNAPSHOT.jar")
+                        .toPath(),
+                sourceFile.toPath());
+
+        // The ITs relied on pomFile for all coordinates; class-level test coordinates must not leak in.
+        setMojoField(mojo, "groupId", null);
+        setMojoField(mojo, "artifactId", null);
+        setMojoField(mojo, "version", null);
+        setMojoField(mojo, "packaging", testCase.packaging());
+        setMojoField(mojo, "extension", testCase.extension());
+        setMojoField(mojo, "pomFile", pomFile);
+        setMojoField(mojo, "file", sourceFile);
+
+        mojo.execute();
+
+        assertTrue(pomFile.isFile(), "Source POM should still exist: " + pomFile);
+        assertTrue(sourceFile.isFile(), "Source file should still exist: " + sourceFile);
+        assertInstalled(localRepo, testCase.artifactPath());
+        assertInstalled(localRepo, testCase.pomPath());
+        assertInstalled(localRepo, testCase.metadataPath());
+        assertEquals(
+                Files.readAllLines(pomFile.toPath()),
+                Files.readAllLines(new File(localRepo, testCase.pomPath()).toPath()),
+                "The installed POM must be the supplied pomFile, not a generated one");
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    @MojoParameter(name = "packaging", value = "jar")
+    void fileDoesNotExists(InstallFileMojo mojo) throws Exception {
+        File missing = tempDir.resolve("does-not-exist.jar").toFile();
+        setMojoField(mojo, "file", missing);
+
+        MojoFailureException e = assertThrows(MojoFailureException.class, mojo::execute);
+        assertTrue(e.getMessage().contains("does not exist"), e.getMessage());
+        assertFalse(localRepo.exists(), "Nothing should be installed into " + localRepo);
+    }
+
+    private static String pomXmlWithParent(String artifactId) {
+        return "<project xmlns=\"http://maven.apache.org/POM/4.0.0\""
+                + " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+                + " xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0"
+                + " http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
+                + "  <modelVersion>4.0.0</modelVersion>\n"
+                + "  <parent>\n"
+                + "    <groupId>org.apache.maven.its.install.121</groupId>\n"
+                + "    <artifactId>parent</artifactId>\n"
+                + "    <version>1.0</version>\n"
+                + "  </parent>\n"
+                + "  <artifactId>"
+                + artifactId
+                + "</artifactId>\n"
+                + "</project>\n";
     }
 
     private void assertInstalled(File repo, String path) {
