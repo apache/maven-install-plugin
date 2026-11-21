@@ -20,6 +20,8 @@ package org.apache.maven.plugins.install;
 
 import java.io.File;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
@@ -267,6 +270,103 @@ class InstallMojoTest {
         mojo.execute();
 
         verify(artifactInstaller, times(2)).install(any(ArtifactInstallerRequest.class));
+    }
+
+    // -------------------------------------------------------------------------------------------------------
+    // Conversions of the src/it integration tests that exercised the install mojo's project processing.
+    // -------------------------------------------------------------------------------------------------------
+
+    private static final String MAIN_ARTIFACT_WITHOUT_ATTACHMENTS_MESSAGE =
+            "The packaging plugin for this project did not assign a main file to the project but it has attachments."
+                    + " Change packaging to 'pom'.";
+
+    private static final Path ATTACHED_ARTIFACT_JAR =
+            Paths.get("target/test-classes/unit/attached-artifact-test-1.0-SNAPSHOT.jar");
+
+    /** Converted from {@code src/it/no-main-artifact-1}: target/classes is absent. */
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
+    void noMainArtifactWithAttachmentsFailsWhenOutputDirMissing(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        Project project = (Project) getVariableValueFromObject(mojo, "project");
+        assertFalse(artifactManager.getPath(project.getMainArtifact().get()).isPresent());
+        attachClassifiedJar(project, "it");
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+
+        assertTrue(e.getMessage().contains(MAIN_ARTIFACT_WITHOUT_ATTACHMENTS_MESSAGE), e.getMessage());
+    }
+
+    /** Converted from {@code src/it/no-main-artifact-2}: target/classes exists (as a directory, not a file). */
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
+    void noMainArtifactWithAttachmentsFailsWhenOutputDirPresent(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        Project project = (Project) getVariableValueFromObject(mojo, "project");
+        Path outputDir = Paths.get(getBasedir(), "target/no-main-artifact-output-dir");
+        Files.createDirectories(outputDir);
+        artifactManager.setPath(project.getMainArtifact().get(), outputDir);
+        assertFalse(Files.isRegularFile(
+                artifactManager.getPath(project.getMainArtifact().get()).get()));
+        attachClassifiedJar(project, "it");
+
+        MojoException e = assertThrows(MojoException.class, mojo::execute);
+
+        assertTrue(e.getMessage().contains(MAIN_ARTIFACT_WITHOUT_ATTACHMENTS_MESSAGE), e.getMessage());
+    }
+
+    /** Converted from {@code src/it/attach-jar-checksum}: pom, jar and attached sources are installed, no checksums. */
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
+    void attachedJarInstalledWithoutChecksums(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        Project project = (Project) getVariableValueFromObject(mojo, "project");
+        artifactManager.setPath(
+                project.getMainArtifact().get(),
+                Paths.get(getBasedir(), "target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar"));
+        projectManager.attachArtifact(
+                project,
+                new ProducedArtifactStub(
+                        "org.apache.maven.test", "maven-install-test", "sources", "1.0-SNAPSHOT", "jar"),
+                Paths.get(getBasedir()).resolve(ATTACHED_ARTIFACT_JAR));
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        assertEquals(
+                Arrays.asList(
+                        "org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT",
+                        "org.apache.maven.test:maven-install-test:jar:1.0-SNAPSHOT",
+                        "org.apache.maven.test:maven-install-test:jar:sources:1.0-SNAPSHOT"),
+                request.getArtifacts().stream().map(Artifact::key).toList());
+        assertTrue(request.getArtifacts().stream()
+                .noneMatch(a -> "md5".equals(a.getExtension()) || "sha1".equals(a.getExtension())));
+        assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
+    }
+
+    private void attachClassifiedJar(Project project, String classifier) {
+        projectManager.attachArtifact(
+                project,
+                new ProducedArtifactStub(
+                        "org.apache.maven.test", "attached-artifact-test", classifier, "1.0-SNAPSHOT", "jar"),
+                Paths.get(getBasedir()).resolve(ATTACHED_ARTIFACT_JAR));
+    }
+
+    private static void assertNoChecksumFiles(Path repositoryRoot) throws Exception {
+        if (!Files.exists(repositoryRoot)) {
+            return;
+        }
+        try (Stream<Path> paths = Files.walk(repositoryRoot)) {
+            assertTrue(
+                    paths.noneMatch(p -> {
+                        String name = p.getFileName().toString();
+                        return name.endsWith(".md5") || name.endsWith(".sha1");
+                    }),
+                    "no .md5/.sha1 checksum files should be created");
+        }
     }
 
     private Project reactorProject(String artifactId) {

@@ -19,11 +19,14 @@
 package org.apache.maven.plugins.install;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.apache.maven.api.Artifact;
 import org.apache.maven.api.MojoExecution;
@@ -55,6 +58,7 @@ import static org.apache.maven.api.plugin.testing.MojoExtension.getBasedir;
 import static org.apache.maven.api.plugin.testing.MojoExtension.getVariableValueFromObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
@@ -101,6 +105,40 @@ class InstallMojoPomPackagingTest {
         assertEquals(
                 List.of("org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT"),
                 artifacts.stream().map(Artifact::key).toList());
+    }
+
+    /** Converted from {@code src/it/pom-checksum}: the POM is installed and no checksum files are created. */
+    @Test
+    @InjectMojo(goal = "install")
+    @MojoParameter(name = "installAtEnd", value = "false")
+    void pomPackagingInstalledWithoutChecksums(InstallMojo mojo) throws Exception {
+        assertNotNull(mojo);
+        Project project = (Project) getVariableValueFromObject(mojo, "project");
+        artifactManager.setPath(project.getPomArtifact(), project.getPomPath());
+
+        ArtifactInstallerRequest request = execute(mojo);
+
+        assertNotNull(request);
+        assertEquals(
+                List.of("org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT"),
+                request.getArtifacts().stream().map(Artifact::key).toList());
+        assertTrue(request.getArtifacts().stream()
+                .noneMatch(a -> "md5".equals(a.getExtension()) || "sha1".equals(a.getExtension())));
+        assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
+    }
+
+    private static void assertNoChecksumFiles(Path repositoryRoot) throws Exception {
+        if (!Files.exists(repositoryRoot)) {
+            return;
+        }
+        try (Stream<Path> paths = Files.walk(repositoryRoot)) {
+            assertTrue(
+                    paths.noneMatch(p -> {
+                        String name = p.getFileName().toString();
+                        return name.endsWith(".md5") || name.endsWith(".sha1");
+                    }),
+                    "no .md5/.sha1 checksum files should be created");
+        }
     }
 
     @Provides

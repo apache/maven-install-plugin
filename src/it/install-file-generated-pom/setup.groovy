@@ -20,10 +20,8 @@
 import java.io.*;
 import java.util.*;
 
-import org.codehaus.plexus.util.*;
-
-File file = new File( localRepositoryPath, "org/apache/maven/its/install/nma2" );
+File file = new File( localRepositoryPath, "org/apache/maven/its/install/55" );
 System.out.println( "Deleting " + file );
-FileUtils.deleteDirectory( file );
+file.deleteDir();
 
 return true;
