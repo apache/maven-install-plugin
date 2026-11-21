@@ -70,6 +70,21 @@
     </site>
   </distributionManagement>
 
+
+  <repositories>
+    <repository>
+      <id>apache.snapshots</id>
+      <name>Apache Snapshot Repository</name>
+      <url>https://repository.apache.org/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
   <properties>
     <javaVersion>17</javaVersion>
     <!-- JUnit 6 needs Java 17, which this Maven 4 line already requires -->
