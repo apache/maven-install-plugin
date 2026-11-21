@@ -27,7 +27,7 @@ under the License.
 
 # Installing an artifact to a specific local repository path
 
-General information about how to copy jars into your local repository can be found in the [Guide to installing 3rd party JARs](http://maven.apache.org/guides/mini/guide-3rd-party-jars-local.html)
+General information about how to copy jars into your local repository can be found in the [Guide to installing 3rd party JARs](https://maven.apache.org/guides/mini/guide-3rd-party-jars-local.html)
 
 By default, the Apache Maven Install Plugin uses the local repository defined in the `settings.xml` to install an artifact.
 
