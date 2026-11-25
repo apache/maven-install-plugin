@@ -17,6 +17,6 @@
  * under the License.
  */
 
-assert new File( basedir, "../../local-repo/org/apache/maven/its/minstall-99/configperproject/1.0/configperproject-1.0.pom" ).exists()
-assert new File( basedir, "../../local-repo/org/apache/maven/its/minstall-99/module1/1.0/module1-1.0.pom" ).exists()
-assert !( new File( basedir, "../../local-repo/org/apache/maven/its/minstall-99/module2/1.0/module2-1.0.pom" ).exists() )
+assert new File(basedir, "../../local-repo/org/apache/maven/its/minstall-99/configperproject/1.0/configperproject-1.0.pom").exists()
+assert new File(basedir, "../../local-repo/org/apache/maven/its/minstall-99/module1/1.0/module1-1.0.pom").exists()
+assert !(new File(basedir, "../../local-repo/org/apache/maven/its/minstall-99/module2/1.0/module2-1.0.pom").exists())

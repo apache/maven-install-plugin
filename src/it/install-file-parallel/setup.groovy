@@ -17,12 +17,12 @@
  * under the License.
  */
 
-import java.io.*;
+import java.io.*
 
 // Clean up artifacts installed by previous runs
-File group = new File( localRepositoryPath, "org/apache/maven/its/install/minstall205" );
-if ( group.exists() ) {
+File group = new File(localRepositoryPath, "org/apache/maven/its/install/minstall205")
+if (group.exists()) {
     group.deleteDir()
 }
 
-return true;
+return true

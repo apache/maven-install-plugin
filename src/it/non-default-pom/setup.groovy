@@ -17,13 +17,13 @@
  * under the License.
  */
 
-import java.io.*;
-import java.util.*;
+import java.io.*
+import java.util.*
 
-import org.codehaus.plexus.util.*;
+import org.codehaus.plexus.util.*
 
-File file = new File( localRepositoryPath, "org/apache/maven/its/install/ndp" );
-System.out.println( "Deleting " + file );
-FileUtils.deleteDirectory( file );
+File file = new File(localRepositoryPath, "org/apache/maven/its/install/ndp")
+System.out.println("Deleting " + file)
+FileUtils.deleteDirectory(file)
 
-return true;
+return true

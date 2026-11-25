@@ -17,9 +17,9 @@
  * under the License.
  */
 
-File buildLog = new File( basedir, 'build.log' )
+File buildLog = new File(basedir, 'build.log')
 assert buildLog.exists()
 /* UNTIL MINSTALL-108 will be fixed the result
  * should not be <installAtEnd default-value="true">false</installAtEnd>
  */
-assert buildLog.text.contains ( '<installAtEnd default-value="true">true</installAtEnd>')
+assert buildLog.text.contains('<installAtEnd default-value="true">true</installAtEnd>')

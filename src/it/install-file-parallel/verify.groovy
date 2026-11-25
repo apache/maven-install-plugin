@@ -20,7 +20,7 @@
 // install:install-file must not trigger an "aggregator mojo" warning
 // when two modules invoke it concurrently in a parallel (-T 2) build.
 
-import java.io.*;
+import java.io.*
 
 // 1. Both artifacts must have been installed successfully
 String[] paths = [
@@ -28,17 +28,17 @@ String[] paths = [
     "org/apache/maven/its/install/minstall205/external-module1/1.0/external-module1-1.0.pom",
     "org/apache/maven/its/install/minstall205/external-module2/1.0/external-module2-1.0.jar",
     "org/apache/maven/its/install/minstall205/external-module2/1.0/external-module2-1.0.pom",
-];
+]
 
-for ( String path : paths ) {
-    File file = new File( localRepositoryPath, path );
-    System.out.println( "Checking for existence of " + file );
-    assert file.isFile() : "Missing: " + file.getAbsolutePath();
+for (String path : paths) {
+    File file = new File(localRepositoryPath, path)
+    System.out.println("Checking for existence of " + file)
+    assert file.isFile() : "Missing: " + file.getAbsolutePath()
 }
 
 // 2. The build log must NOT contain the "aggregator mojo already being executed" warning
-File buildLog = new File( basedir, "build.log" );
-String log = buildLog.text;
+File buildLog = new File(basedir, "build.log")
+String log = buildLog.text
 
-assert !log.contains( "aggregator mojo is already being executed" ) :
-    "install-file should no longer be an aggregator, but the build log contains the warning"
+assert !log.contains("aggregator mojo is already being executed") :
+"install-file should no longer be an aggregator, but the build log contains the warning"
