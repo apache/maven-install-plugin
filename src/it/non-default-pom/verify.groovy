@@ -17,9 +17,6 @@
  * under the License.
  */
 
-import java.io.*;
-import java.util.*;
-
 String[] paths =
 [
     "org/apache/maven/its/install/ndp/test/maven-metadata-local.xml",
