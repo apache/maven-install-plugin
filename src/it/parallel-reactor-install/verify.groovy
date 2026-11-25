@@ -17,6 +17,6 @@
  * under the License.
  */
 
-assert new File( basedir, "../../local-repo/org/apache/maven/its/minstall-98/multithread/1.0/multithread-1.0.pom" ).exists()
-assert new File( basedir, "../../local-repo/org/apache/maven/its/minstall-98/module1/1.0/module1-1.0.pom" ).exists()
-assert new File( basedir, "../../local-repo/org/apache/maven/its/minstall-98/module2/1.0/module2-1.0.pom" ).exists()
+assert new File(basedir, "../../local-repo/org/apache/maven/its/minstall-98/multithread/1.0/multithread-1.0.pom").exists()
+assert new File(basedir, "../../local-repo/org/apache/maven/its/minstall-98/module1/1.0/module1-1.0.pom").exists()
+assert new File(basedir, "../../local-repo/org/apache/maven/its/minstall-98/module2/1.0/module2-1.0.pom").exists()

@@ -18,14 +18,13 @@
  */
 
 String[] paths =
-[
-    "org/apache/maven/its/install/ndp/test/maven-metadata-local.xml",
-    "org/apache/maven/its/install/ndp/test/1.0-SNAPSHOT/maven-metadata-local.xml",
-    "org/apache/maven/its/install/ndp/test/1.0-SNAPSHOT/test-1.0-SNAPSHOT.pom",
-];
+        [
+            "org/apache/maven/its/install/ndp/test/maven-metadata-local.xml",
+            "org/apache/maven/its/install/ndp/test/1.0-SNAPSHOT/maven-metadata-local.xml",
+            "org/apache/maven/its/install/ndp/test/1.0-SNAPSHOT/test-1.0-SNAPSHOT.pom",
+        ]
 
-for ( String path : paths )
-{
-    File file = new File( localRepositoryPath, path );
-    assert file.isFile() : "Missing: " + file.getAbsolutePath();
+for (String path : paths) {
+    File file = new File(localRepositoryPath, path)
+    assert file.isFile() : "Missing: " + file.getAbsolutePath()
 }
