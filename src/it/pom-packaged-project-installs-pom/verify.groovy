@@ -21,15 +21,14 @@
 // A subsequent install:install must install the POM, not that JAR. Maven 4 also installs a
 // -build.pom next to the consumer POM, so check every installed .pom file.
 
-File dir = new File( localRepositoryPath, "org/apache/maven/its/install/minstall315/test/1.0" )
-File installed = new File( dir, "test-1.0.pom" )
+File dir = new File(localRepositoryPath, "org/apache/maven/its/install/minstall315/test/1.0")
+File installed = new File(dir, "test-1.0.pom")
 assert installed.isFile() : "Installed file not found: " + installed
 
 // A JAR (ZIP) starts with the magic bytes PK (0x50 0x4B).
-for ( File pom : dir.listFiles().findAll { it.name.endsWith( ".pom" ) } )
-{
+for ( File pom : dir.listFiles().findAll { it.name.endsWith( ".pom" ) } ) {
     byte[] magic = new byte[2]
     pom.withInputStream { it.read( magic ) }
     assert !( magic[0] == 0x50 && magic[1] == 0x4B ) :
-        "install:install installed a JAR (ZIP) instead of the POM as " + pom.name
+    "install:install installed a JAR (ZIP) instead of the POM as " + pom.name
 }

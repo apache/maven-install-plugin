@@ -17,10 +17,10 @@
  * under the License.
  */
 
-assert new File( basedir, "../../local-repo/org/apache/maven/plugins/install/its/minstall52/1.0-SNAPSHOT/minstall52-1.0-SNAPSHOT.jar" ).exists()
-assert new File( basedir, "../../local-repo/org/apache/maven/plugins/install/its/minstall52/1.0-SNAPSHOT/minstall52-1.0-SNAPSHOT.pom" ).exists()
+assert new File(basedir, "../../local-repo/org/apache/maven/plugins/install/its/minstall52/1.0-SNAPSHOT/minstall52-1.0-SNAPSHOT.jar").exists()
+assert new File(basedir, "../../local-repo/org/apache/maven/plugins/install/its/minstall52/1.0-SNAPSHOT/minstall52-1.0-SNAPSHOT.pom").exists()
 
-File buildLog = new File( basedir, 'build.log' )
+File buildLog = new File(basedir, 'build.log')
 assert buildLog.exists()
-assert buildLog.text.contains( "[INFO] Loading META-INF/maven/org.apache.maven.plugins.install.its/minstall52/pom.xml from" )
-assert buildLog.text.contains( "[INFO] Using JAR embedded POM as pomFile" )
+assert buildLog.text.contains("[INFO] Loading META-INF/maven/org.apache.maven.plugins.install.its/minstall52/pom.xml from")
+assert buildLog.text.contains("[INFO] Using JAR embedded POM as pomFile")
