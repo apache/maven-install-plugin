@@ -17,8 +17,8 @@
  * under the License.
  */
 
-File dir = new File( localRepositoryPath, "org/apache/maven/its/install/minstall315" )
-System.out.println( "Deleting " + dir )
+File dir = new File(localRepositoryPath, "org/apache/maven/its/install/minstall315")
+System.out.println("Deleting " + dir)
 dir.deleteDir()
 
 return true

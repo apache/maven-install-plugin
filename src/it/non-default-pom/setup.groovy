@@ -17,6 +17,6 @@
  * under the License.
  */
 
-File file = new File( localRepositoryPath, "org/apache/maven/its/install/ndp" );
-System.out.println( "Deleting " + file );
-assert file.deleteDir();
+File file = new File(localRepositoryPath, "org/apache/maven/its/install/ndp")
+System.out.println("Deleting " + file)
+assert file.deleteDir()
