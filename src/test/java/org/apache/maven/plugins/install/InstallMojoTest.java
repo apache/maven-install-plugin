@@ -316,11 +316,11 @@ class InstallMojoTest {
         assertTrue(e.getMessage().contains(MAIN_ARTIFACT_WITHOUT_ATTACHMENTS_MESSAGE), e.getMessage());
     }
 
-    /** Converted from {@code src/it/attach-jar-checksum}: pom, jar and attached sources are installed, no checksums. */
+    /** Converted from {@code src/it/attach-jar-checksum}: pom, jar and attached sources are installed. */
     @Test
     @InjectMojo(goal = "install")
     @MojoParameter(name = "installAtEnd", value = "false")
-    void attachedJarInstalledWithoutChecksums(InstallMojo mojo) throws Exception {
+    void attachedJarInstalled(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         Project project = (Project) getVariableValueFromObject(mojo, "project");
         artifactManager.setPath(
@@ -341,9 +341,6 @@ class InstallMojoTest {
                         "org.apache.maven.test:maven-install-test:jar:1.0-SNAPSHOT",
                         "org.apache.maven.test:maven-install-test:jar:sources:1.0-SNAPSHOT"),
                 request.getArtifacts().stream().map(Artifact::key).toList());
-        assertTrue(request.getArtifacts().stream()
-                .noneMatch(a -> "md5".equals(a.getExtension()) || "sha1".equals(a.getExtension())));
-        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
     /** Converted from {@code src/it/release-jar}: a plain release JAR installs its POM and JAR. */

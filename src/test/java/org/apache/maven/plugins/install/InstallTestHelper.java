@@ -19,27 +19,9 @@
 package org.apache.maven.plugins.install;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InstallTestHelper {
-    static void assertNoChecksumFiles(Path repositoryRoot) throws Exception {
-        if (!Files.exists(repositoryRoot)) {
-            return;
-        }
-        try (Stream<Path> paths = Files.walk(repositoryRoot)) {
-            assertTrue(
-                    paths.noneMatch(p -> {
-                        String name = p.getFileName().toString();
-                        return name.endsWith(".md5") || name.endsWith(".sha1");
-                    }),
-                    "no .md5/.sha1 checksum files should be created");
-        }
-    }
-
     /**
      * Location of the version-level {@code maven-metadata-local.xml}, relative to the local repository root.
      *

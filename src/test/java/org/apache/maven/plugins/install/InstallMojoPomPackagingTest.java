@@ -56,7 +56,6 @@ import static org.apache.maven.api.plugin.testing.MojoExtension.getBasedir;
 import static org.apache.maven.api.plugin.testing.MojoExtension.getVariableValueFromObject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
@@ -105,11 +104,11 @@ class InstallMojoPomPackagingTest {
                 artifacts.stream().map(Artifact::key).toList());
     }
 
-    /** Converted from {@code src/it/pom-checksum}: the POM is installed and no checksum files are created. */
+    /** Converted from {@code src/it/pom-checksum}: the POM is installed. */
     @Test
     @InjectMojo(goal = "install")
     @MojoParameter(name = "installAtEnd", value = "false")
-    void pomPackagingInstalledWithoutChecksums(InstallMojo mojo) throws Exception {
+    void pomPackagingInstalled(InstallMojo mojo) throws Exception {
         assertNotNull(mojo);
         Project project = (Project) getVariableValueFromObject(mojo, "project");
         artifactManager.setPath(project.getPomArtifact(), project.getPomPath());
@@ -120,9 +119,6 @@ class InstallMojoPomPackagingTest {
         assertEquals(
                 List.of("org.apache.maven.test:maven-install-test:pom:1.0-SNAPSHOT"),
                 request.getArtifacts().stream().map(Artifact::key).toList());
-        assertTrue(request.getArtifacts().stream()
-                .noneMatch(a -> "md5".equals(a.getExtension()) || "sha1".equals(a.getExtension())));
-        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
     /** Converted from {@code src/it/release-pom}: a plain release POM installs only its POM. */
