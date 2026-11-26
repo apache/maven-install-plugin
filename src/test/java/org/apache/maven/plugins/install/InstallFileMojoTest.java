@@ -633,8 +633,8 @@ class InstallFileMojoTest {
     // Conversions of the src/it integration tests that only exercised install:install-file mojo behaviour.
     // The real ArtifactInstaller is mocked by the harness, so "installed" is asserted as the set of
     // artifacts handed to it (plus the generated POM model captured while the install call is in flight).
-    // Checksum files are produced by Maven's ArtifactInstaller, never by this mojo; at this level we
-    // assert that no checksum artifact is handed to the installer and that none is left in the repo.
+    // Checksum files are written by the real ArtifactInstaller, which these tests mock, so they cannot be
+    // checked here; the real-install ITs under src/it assert that none are created.
     // -------------------------------------------------------------------------------------------------------
 
     /** Converted from {@code src/it/gav-validation} (invalid coordinates, test-invalid.properties). */
@@ -702,7 +702,6 @@ class InstallFileMojoTest {
         assertEquals(groupId, model.get().getGroupId());
         assertEquals(artifactId, model.get().getArtifactId());
         assertEquals(version, model.get().getVersion());
-        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
     /** Converted from {@code src/it/generate-pom-auto-2}: a POM already in the repo is never overwritten. */
@@ -731,7 +730,6 @@ class InstallFileMojoTest {
         assertEquals(Collections.singleton(jar), new HashSet<>(request.getArtifacts()));
         assertFileExists(artifactManager.getPath(jar).orElse(null));
         assertEquals("test", Files.readString(existingPom), "existing POM must keep its original 4-byte content");
-        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
     /** Converted from {@code src/it/local-repo-override-with-checksum}: install into a custom local repository. */
@@ -745,7 +743,7 @@ class InstallFileMojoTest {
             name = "file",
             value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
     @MojoParameter(name = "localRepositoryPath", value = "target/local-repo-override")
-    void installFileIntoOverriddenLocalRepositoryNoChecksums(InstallFileMojo mojo) throws Exception {
+    void installFileIntoOverriddenLocalRepository(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
 
@@ -754,18 +752,15 @@ class InstallFileMojoTest {
         assertNotNull(request);
         Artifact jar = getArtifact(null, "jar");
         assertTrue(request.getArtifacts().contains(jar), "the jar must be installed into the overridden repository");
-        assertTrue(request.getArtifacts().stream()
-                .noneMatch(a -> "md5".equals(a.getExtension()) || "sha1".equals(a.getExtension())));
         assertFileExistsInRequest(request, jar);
         assertEquals(
                 Paths.get(getBasedir(), OVERRIDE_REPO).toString().replace(File.separator, "/"),
                 request.getSession().getLocalRepository().getPath().toString().replace(File.separator, "/"));
-        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), OVERRIDE_REPO));
     }
 
     /**
      * Converted from {@code src/it/local-repo-override-with-checksum-generatePom}: the generated POM is installed
-     * into the custom local repository too, and neither jar nor POM gets a checksum file.
+     * into the custom local repository too, and not just the jar.
      */
     @Test
     @InjectMojo(goal = "install-file")
@@ -778,7 +773,7 @@ class InstallFileMojoTest {
             value = "${project.basedir}/target/test-classes/unit/maven-install-test-1.0-SNAPSHOT.jar")
     @MojoParameter(name = "generatePom", value = "true")
     @MojoParameter(name = "localRepositoryPath", value = "target/local-repo-override")
-    void installFileIntoOverriddenLocalRepositoryWithGeneratedPomNoChecksums(InstallFileMojo mojo) throws Exception {
+    void installFileIntoOverriddenLocalRepositoryWithGeneratedPom(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
 
@@ -797,7 +792,6 @@ class InstallFileMojoTest {
         assertEquals(groupId, model.get().getGroupId());
         assertEquals(artifactId, model.get().getArtifactId());
         assertEquals(version, model.get().getVersion());
-        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), OVERRIDE_REPO));
     }
 
     /**
@@ -875,7 +869,6 @@ class InstallFileMojoTest {
         assertEquals(
                 LOCAL_REPO,
                 request.getSession().getLocalRepository().getPath().toString().replace(File.separator, "/"));
-        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
     static Stream<PackagingCase> packagingCases() {
@@ -953,12 +946,11 @@ class InstallFileMojoTest {
         assertFileExists(artifactManager.getPath(jar).orElse(null));
         assertTrue(Files.isRegularFile(pomFile), "the source pomFile must still exist after installation");
         assertGroupMetadataCoordinates(request, "org/apache/maven/its/install/55/test");
-        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
     /**
      * Converted from {@code src/it/jar-sources-javadoc}: install-file with a JAR plus {@code sources} and
-     * {@code javadoc} attachments installs all four files (POM, JAR, sources, javadoc) and no checksum files.
+     * {@code javadoc} attachments installs all four files (POM, JAR, sources, javadoc).
      * The harness mocks the real {@link ArtifactInstaller} (which writes metadata), so the group-level metadata
      * path is expressed through the install request's coordinates.
      */
@@ -977,7 +969,7 @@ class InstallFileMojoTest {
     @MojoParameter(
             name = "javadoc",
             value = "${project.basedir}/target/test-classes/unit/attached-artifact-test-1.0-SNAPSHOT.jar")
-    void installFileWithSourcesAndJavadocInstallsAllFourFilesWithoutChecksums(InstallFileMojo mojo) throws Exception {
+    void installFileWithSourcesAndJavadocInstallsAllFourFiles(InstallFileMojo mojo) throws Exception {
         assertNotNull(mojo);
         assignValuesForParameter(mojo);
 
@@ -1023,10 +1015,7 @@ class InstallFileMojoTest {
         assertEquals(
                 "org/apache/maven/its/install/jsj/test/0.1/test-0.1-javadoc.jar",
                 repoRelativePath(session.getPathForLocalArtifact(javadoc)));
-        assertTrue(request.getArtifacts().stream()
-                .noneMatch(a -> "md5".equals(a.getExtension()) || "sha1".equals(a.getExtension())));
         assertGroupMetadataCoordinates(request, "org/apache/maven/its/install/jsj/test");
-        InstallTestHelper.assertNoChecksumFiles(Paths.get(getBasedir(), LOCAL_REPO));
     }
 
     private void assertGroupMetadataCoordinates(ArtifactInstallerRequest request, String groupArtifactPath) {
