@@ -749,6 +749,55 @@ public class InstallFileMojoTest {
 
     @Test
     @InjectMojo(goal = "install-file")
+    void installFileWithPomFileAndNoPackagingDefaultsToJar(InstallFileMojo mojo) throws Exception {
+        // The POM declares no packaging, so the model default (jar) must give the artifact its extension
+        installWithPomFileOnly(mojo, pomXmlWithParent("test"), "test-0.1.jar");
+
+        String versionDir = "org/apache/maven/its/install/121/test/1.0/";
+        assertEquals("jar", getMojoField(mojo, "packaging"));
+        assertInstalled(localRepo, versionDir + "test-1.0.jar");
+        assertInstalled(localRepo, versionDir + "test-1.0.pom");
+        assertInstalled(localRepo, "org/apache/maven/its/install/121/test/maven-metadata-local.xml");
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
+    void installFileWithPomFileAndNoPackagingTakesPackagingFromPom(InstallFileMojo mojo) throws Exception {
+        String pom = pomXmlWithParent("test-war").replace("</project>", "  <packaging>war</packaging>\n</project>");
+        installWithPomFileOnly(mojo, pom, "test-0.1.war");
+
+        String versionDir = "org/apache/maven/its/install/121/test-war/1.0/";
+        assertEquals("war", getMojoField(mojo, "packaging"));
+        assertInstalled(localRepo, versionDir + "test-war-1.0.war");
+        assertInstalled(localRepo, versionDir + "test-war-1.0.pom");
+        assertFalse(new File(localRepo, versionDir + "test-war-1.0.jar").exists());
+    }
+
+    /**
+     * Runs the goal with only {@code file} and {@code pomFile}: no coordinates and no packaging, as the former
+     * install-file-generated-pom IT did.
+     */
+    private void installWithPomFileOnly(InstallFileMojo mojo, String pom, String sourceFileName) throws Exception {
+        File pomFile = tempDir.resolve("test-0.1.pom").toFile();
+        Files.write(pomFile.toPath(), pom.getBytes(StandardCharsets.UTF_8));
+        File sourceFile = tempDir.resolve(sourceFileName).toFile();
+        Files.copy(
+                MojoExtension.getTestFile("target/maven-install-test-1.0-SNAPSHOT.jar")
+                        .toPath(),
+                sourceFile.toPath());
+
+        setMojoField(mojo, "groupId", null);
+        setMojoField(mojo, "artifactId", null);
+        setMojoField(mojo, "version", null);
+        setMojoField(mojo, "packaging", null);
+        setMojoField(mojo, "pomFile", pomFile);
+        setMojoField(mojo, "file", sourceFile);
+
+        mojo.execute();
+    }
+
+    @Test
+    @InjectMojo(goal = "install-file")
     @MojoParameter(name = "groupId", value = "org.apache.maven.its.install.jsj")
     @MojoParameter(name = "artifactId", value = "test")
     @MojoParameter(name = "version", value = "0.1")
