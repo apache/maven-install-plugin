@@ -599,17 +599,18 @@ class InstallMojoTest {
                 "it",
                 Files.createTempFile(tempDir, "test", "jar").toFile());
 
-        // The two IT variants differ only by the presence of target/classes. Mirror that under the temp
-        // directory so the real build output is untouched.
+        // The two IT variants differ only by the presence of target/classes. Without it the main artifact has no
+        // file; with it the compiler plugin points the main artifact at that directory, which is not a file either.
+        // Mirror both under the temp directory so the real build output is untouched.
         Path classesDir = tempDir.resolve("target/classes");
         if (classesDirPresent) {
             Files.createDirectories(classesDir);
             assertTrue(Files.isDirectory(classesDir));
+            mavenProject.getArtifact().setFile(classesDir.toFile());
         } else {
             assertFalse(Files.exists(classesDir));
+            mavenProject.getArtifact().setFile(null);
         }
-
-        mavenProject.getArtifact().setFile(null);
 
         MojoExecutionException e = assertThrows(MojoExecutionException.class, mojo::execute);
         assertEquals(
